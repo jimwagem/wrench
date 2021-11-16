@@ -101,6 +101,7 @@ A documentation of dataset format and usage can be found in this [wiki-page](htt
 | IMDB | sentiment clasification | 2 | 8 | 20000 | 2500 | 2500 | [link](https://dl.acm.org/doi/10.5555/2002472.2002491) | [link](https://arxiv.org/abs/2010.04582) |
 | Yelp | sentiment clasification | 2 | 8 | 30400 | 3800 | 3800 | [link](https://arxiv.org/abs/1509.01626) | [link](https://arxiv.org/abs/2010.04582) |
 | AGNews | topic clasification | 4 | 9 | 96000 | 12000 | 12000 | [link](https://arxiv.org/abs/1509.01626) | [link](https://arxiv.org/abs/2010.04582) |
+| Amazon review dataset | sentiment classification | ? | ? | ? | ? | ? | [link](#) | [link](#) |
 | TREC | question classification | 6 | 68 | 4965 | 500 | 500 | [link](https://aclanthology.org/C02-1150.pdf) | [link](https://openreview.net/forum?id=SkeuexBtDr) |
 | Spouse | relation classification | 2 | 9 | 22254 | 2801 | 2701 | [link](http://ceur-ws.org/Vol-1568/paper8.pdf) | [link](https://arxiv.org/abs/1711.10160) |
 | SemEval | relation classification | 9 | 164 | 1749 | 200 | 692 | [link](https://aclanthology.org/S10-1006/) | [link](https://arxiv.org/abs/1909.02177) |
@@ -110,6 +111,7 @@ A documentation of dataset format and usage can be found in this [wiki-page](htt
 | Tennis Rally | video frame classification | 2 | 6 | 6959 | 746 | 1098 | [link](https://arxiv.org/pdf/2002.11955.pdf) | [link](https://arxiv.org/abs/2002.11955) |
 | Basketball | video frame classification | 2 | 4 | 17970 | 1064 | 1222 | [link](https://arxiv.org/pdf/2002.11955.pdf) | [link](https://arxiv.org/abs/2002.11955) |
 | [DomainNet](https://github.com/JieyuZ2/wrench/tree/main/datasets/domainnet) | image classification | - | - | - | - | - | [link](https://arxiv.org/pdf/1812.01754.pdf) | [link](http://cs.brown.edu/people/sbach/files/mazzetto-icml21.pdf) |
+| ProfTeacher | occupation classification | ? | ? | ? | ? | ? | [link](https://www.microsoft.com/en-us/research/uploads/prod/2019/01/bios_bias.pdf) | [link](#) |
 
 (todo: multiclass / multilabel?)
 
