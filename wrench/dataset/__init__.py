@@ -4,10 +4,10 @@ from .seqdataset import BaseSeqDataset
 from .torchdataset import sample_batch, TorchDataset, BERTTorchTextClassDataset, BERTTorchRelationClassDataset, ImageTorchDataset
 
 numeric_datasets = ['census', 'basketball', 'tennis', 'commercial']
-text_datasets = ['agnews', 'imdb', 'sms', 'trec', 'yelp', 'youtube']
+text_datasets = ['agnews', 'imdb', 'sms', 'trec', 'yelp', 'youtube', 'amazon']
 relation_dataset = ['cdr', 'spouse', 'chemprot', 'semeval']
 cls_dataset_list = numeric_datasets + text_datasets + relation_dataset
-bin_cls_dataset_list = numeric_datasets + ['cdr', 'spouse', 'sms', 'yelp', 'imdb', 'youtube']
+bin_cls_dataset_list = numeric_datasets + ['cdr', 'spouse', 'sms', 'yelp', 'imdb', 'youtube', 'amazon', 'profteacher', 'crowdsourcing']
 seq_dataset_list = ['laptopreview', 'ontonotes', 'ncbi-disease', 'bc5cdr', 'mit-restaurants', 'mit-movies', 'wikigold', 'conll']
 
 import shutil
