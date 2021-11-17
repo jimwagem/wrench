@@ -32,7 +32,7 @@ for idx, (LF, data) in enumerate(zip(label_matrix, Xtrain)):
 valid = {}
 for idx, (label, data) in enumerate(zip(Ytest[-250:], Xtest[-250:])):
     valid[str(idx)] = {"label": label.tolist(), "weak_labels": [], "data": {"feature": data.tolist()}}
-(profteacher_path / "valid.json").write_text(json.dumps(train))
+(profteacher_path / "valid.json").write_text(json.dumps(valid))
 
 test = {}
 for idx, (label, data) in enumerate(zip(Ytest[:-250], Xtest[:-250])):
