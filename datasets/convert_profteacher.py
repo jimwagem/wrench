@@ -9,8 +9,8 @@ from wrench.dataset import load_dataset
 # source: https://drive.google.com/drive/folders/1v7IzA3Ab5zDEsRpLBWmJnXo5841tSOlh
 ds = [
     ('IMDB_12LFs.npz', "imdb_12", {"0": "prof", "1": "teacher"}),
-    ('IMDB_136LFs.npz', "imdb_136", {"0": "prof", "1": "teacher"}),
-    ('professor_teacher99LFs.npz', "profteacher", {"0": "prof", "1": "teacher"}),
+#     ('IMDB_136LFs.npz', "imdb_136", {"0": "prof", "1": "teacher"}),
+    ('professor_teacher_99LFs.npz', "profteacher", {"0": "prof", "1": "teacher"}),
     ('Amazon_175LFs.npz', "amazon", {"0": "prof", "1": "teacher"}),
 ]
 
