@@ -24,7 +24,8 @@ train_data, valid_data, test_data = load_dataset(
     extract_feature=True,
     extract_fn='bert', # extract bert embedding
     model_name=bert_model_name,
-    cache_name='bert'
+    cache_name='bert',
+    device=device,
 )
 
 
