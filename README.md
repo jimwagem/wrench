@@ -78,7 +78,7 @@ Install as pip package using:
   
 ## 🔧 Available Datasets
 
-The datasets can be downloaded via [this](https://drive.google.com/drive/folders/1v55IKG2JN9fMtKJWU48B_5_DcPWGnpTq?usp=sharing).
+The datasets can be downloaded via [this](https://drive.google.com/drive/folders/1v55IKG2JN9fMtKJWU48B_5_DcPWGnpTq?usp=sharing) (wrench) and [this](https://drive.google.com/drive/folders/1v7IzA3Ab5zDEsRpLBWmJnXo5841tSOlh) (weasel).
 
 or via command line
 
