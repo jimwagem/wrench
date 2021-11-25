@@ -74,6 +74,7 @@ def make_leaderboard(models, datasets, metrics, dataset_path='../data/', device=
         )
         dataset_results = []
         for model in models:
+            model.reset()
             model.fit(train_data, valid_data, metrics[0], device=device)
             dataset_results.append(model.test(metrics, test_data))
             if save_dir is not None:
