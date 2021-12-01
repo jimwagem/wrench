@@ -1,6 +1,9 @@
 # import logging
 import torch
+import numpy as np
+import csv
 from ..dataset import load_dataset
+from ..utils import set_seed
 # from wrench.classification import WeaSEL
 # from wrench.labelmodel import Snorkel
 # from wrench.endmodel import EndClassifierModel
@@ -58,12 +61,26 @@ class ModelWrapper():
         if self.label_model is not None:
             self.label_model.save(save_dir + name + '.label')
         torch.save(self.model.model.state_dict(), save_dir + name + '.pt')
+    
+    def log_csv(self, log_file, dataset, metrics, results):
+        if not isinstance(results, list):
+            results = [results]
+        with open(log_file, 'a') as csvfile:
+            writer = csv.writer(csvfile, delimiter=',')
+            for metric, result in zip(metrics, results):
+                write_list = [self.name, dataset, metric, result]
+                writer.writerow(write_list)
 
 
-
-def make_leaderboard(models, datasets, metrics, dataset_path='../data/', device='cpu', save_dir=None):
+def make_leaderboard(models, datasets, metrics, dataset_path='../data/', device='cpu',
+                     save_dir=None, log_file=None, seed_range=None):
     """Trains each model on each datasets and evaluates the different metrics."""
     results = []
+    if seed_range is None:
+        seed_range = np.arange(1)
+    if isinstance(seed_range, int):
+        seed_range = np.arange(seed_range)
+
     for dataset in datasets:
         train_data, valid_data, test_data = load_dataset(
             dataset_path,
@@ -74,11 +91,18 @@ def make_leaderboard(models, datasets, metrics, dataset_path='../data/', device=
         )
         dataset_results = []
         for model in models:
-            model.reset()
-            model.fit(train_data, valid_data, metrics[0], device=device)
-            dataset_results.append(model.test(metrics, test_data))
-            if save_dir is not None:
-                model.save(save_dir, dataset)
+            model_results = []
+            for seed in seed_range:
+                set_seed(seed)
+                model.reset()
+                model.fit(train_data, valid_data, metrics[0], device=device)
+                seed_results = model.test(metrics, test_data)
+                if save_dir is not None:
+                    model.save(save_dir, dataset)
+                if log_file is not None:
+                    model.log_csv(log_file, dataset, metrics, seed_results)
+                model_results.append(seed_results)
+        dataset_results.append(model_results)
         results.append(dataset_results)
     return results
 

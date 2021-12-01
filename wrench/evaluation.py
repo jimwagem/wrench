@@ -7,6 +7,7 @@ import sklearn.metrics as cls_metric
 from seqeval.scheme import IOB2
 from snorkel.utils import probs_to_preds
 
+# Maybe add metric, one versus all, multi-class auc.
 
 def metric_to_direction(metric: str) -> str:
     if metric in ["acc", "f1_binary", "f1_micro", "f1_macro", "f1_weighted", "auc", "ap"]:

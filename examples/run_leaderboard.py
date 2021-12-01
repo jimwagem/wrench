@@ -46,6 +46,6 @@ if __name__=="__main__":
         name = '2stage_MLP_snorkel'
     )
     models = [model1, model2]
-    metrics = ['acc']
+    metrics = ['acc', 'auc']
     print(make_leaderboard(models=models, datasets=datasets, metrics=metrics, dataset_path='../../datasets/',
-        save_dir='../../saved_models/'))
+        save_dir='../../saved_models/', log_file='../../logfile.csv', seed_range=3))
