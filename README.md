@@ -196,6 +196,18 @@ Wrench also provides a [`SeqLabelModelWrapper`](https://github.com/JieyuZ2/wrenc
 
 # 🔧  Quick examples
 
+## 🔧  Descriptive statistics for exploring labelling functions
+
+```python
+from wrench.dataset import load_dataset
+
+
+dataset_home = '../datasets'
+data = 'youtube'
+train_data, valid_data, test_data = load_dataset(dataset_home, data, extract_feature=False)
+print(train_data.lf_summary())
+```
+
 
 ## 🔧  Label model with parallel grid search for hyper-parameters
 
