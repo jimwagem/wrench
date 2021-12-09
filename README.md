@@ -207,9 +207,10 @@ from wrench.dataset import load_dataset
 dataset_home = '../datasets'
 data = 'youtube'
 train_data, valid_data, test_data = load_dataset(dataset_home, data, extract_feature=False)
-global_stats, lf_summary = train_data.summary(return_lf_summary=True)
-print(pprint(global_stats))
-print(lf_summary)
+global_stats, lf_summary_agg, lf_summary = train_data.summary(return_lf_summary=True)
+pprint(global_stats)
+print(lf_summary.to_string())
+print(lf_summary_agg.to_string())
 ```
 
 
