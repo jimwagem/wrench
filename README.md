@@ -196,16 +196,20 @@ Wrench also provides a [`SeqLabelModelWrapper`](https://github.com/JieyuZ2/wrenc
 
 # 🔧  Quick examples
 
-## 🔧  Descriptive statistics for exploring labelling functions
+## 🔧  Descriptive statistics for exploring labeling functions
 
 ```python
+from pprint import pprint
+
 from wrench.dataset import load_dataset
 
 
 dataset_home = '../datasets'
 data = 'youtube'
 train_data, valid_data, test_data = load_dataset(dataset_home, data, extract_feature=False)
-print(train_data.lf_summary())
+global_stats, lf_summary = train_data.summary(return_lf_summary=True)
+print(pprint(global_stats))
+print(lf_summary)
 ```
 
 
