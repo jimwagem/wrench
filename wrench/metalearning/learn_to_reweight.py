@@ -70,7 +70,7 @@ class LearningToReweight(BaseTorchClassModel):
 
         config = self.config.update(**kwargs)
         hyperparas = self.config.hyperparas
-        logger.info(config)
+        logger.debug(config)
 
         n_steps = hyperparas['n_steps']
 

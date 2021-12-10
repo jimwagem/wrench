@@ -168,7 +168,7 @@ class WeaSEL(BaseTorchClassModel):
 
         config = self.config.update(**kwargs)
         hyperparas = self.config.hyperparas
-        logger.info(config)
+        logger.debug(config)
 
         n_steps = hyperparas['n_steps']
         if hyperparas['real_batch_size'] == -1 or hyperparas['batch_size'] < hyperparas['real_batch_size'] or not self.is_bert:

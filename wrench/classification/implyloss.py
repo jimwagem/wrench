@@ -202,7 +202,7 @@ class ImplyLoss(BaseTorchClassModel):
 
         config = self.config.update(**kwargs)
         hyperparas = self.config.hyperparas
-        logger.info(config)
+        logger.debug(config)
 
         n_rules = dataset_train.n_lf
         n_class = dataset_train.n_class

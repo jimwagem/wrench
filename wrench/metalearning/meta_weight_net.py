@@ -95,7 +95,7 @@ class MetaWeightNet(BaseTorchClassModel):
 
         config = self.config.update(**kwargs)
         hyperparas = self.config.hyperparas
-        logger.info(config)
+        logger.debug(config)
 
         v_net_config = self.v_net_config.update(**kwargs)
         logger.info(v_net_config)
