@@ -72,8 +72,14 @@ source activate wrench
 If this not working or you want to use only a subset of modules of Wrench, check out this [wiki page](https://github.com/JieyuZ2/wrench/wiki/Environment-Installation)
 </s>
 
+
+Obtain personal access token via:
+
+`Settings -> Developer settings -> Personal access tokens -> Generate new token`
+
+
 Install as pip package using:
-`pip install git+https://github.com/jimwagem/wrench.git`
+`pip install git+https://[username]:[token]@github.com/sbrugman/wrench.git`
   
   
 ## 🔧 Available Datasets
