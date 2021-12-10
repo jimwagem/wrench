@@ -112,9 +112,7 @@ A documentation of dataset format and usage can be found in this [wiki-page](htt
 | Basketball | video frame classification | 2 | 4 | 17970 | 1064 | 1222 | [link](https://arxiv.org/pdf/2002.11955.pdf) | [link](https://arxiv.org/abs/2002.11955) |
 | [DomainNet](https://github.com/JieyuZ2/wrench/tree/main/datasets/domainnet) | image classification | - | - | - | - | - | [link](https://arxiv.org/pdf/1812.01754.pdf) | [link](http://cs.brown.edu/people/sbach/files/mazzetto-icml21.pdf) |
 | ProfTeacher | occupation classification | 2 | 99 | 12294 | 250 | 12044 | [link](https://www.microsoft.com/en-us/research/uploads/prod/2019/01/bios_bias.pdf) | [link](https://arxiv.org/pdf/2107.02233.pdf) |
-| Crowdsourcing | image classification | ? | 59 | ? | ? | ? | [link](https://ojs.aaai.org/index.php/AAAI/article/view/11506/11365), [link](http://labelme.csail.mit.edu/Release3.0/browserTools/php/dataset.php) | [link](https://arxiv.org/pdf/2107.02233.pdf) |
-
-(todo: multiclass / multilabel?)
+| Crowdsourcing | image classification | 8 | 59 | 10000 | 500 | 1188 | [link](https://ojs.aaai.org/index.php/AAAI/article/view/11506/11365), [link](http://labelme.csail.mit.edu/Release3.0/browserTools/php/dataset.php) | [link](https://arxiv.org/pdf/2107.02233.pdf) |
 
 ### sequence tagging
 
@@ -196,6 +194,8 @@ Wrench also provides a [`SeqLabelModelWrapper`](https://github.com/JieyuZ2/wrenc
 ## Leaderboard
 
 (...)
+
+The script to run the leaderboard is available in `examples/run_leaderboard.py`.
 
 # 🔧  Quick examples
 
