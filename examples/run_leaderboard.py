@@ -1,10 +1,14 @@
+import logging
+
 from wrench.classification import WeaSEL
 from wrench.labelmodel import Snorkel
 from wrench.endmodel import EndClassifierModel
 from wrench.leaderboard import ModelWrapper, make_leaderboard
 
-if __name__=="__main__":
-    device='cpu'
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+
+    device = 'cpu'
     datasets = ['youtube', 'sms']
     model1 = ModelWrapper(
         model_func=lambda : WeaSEL(
@@ -47,5 +51,13 @@ if __name__=="__main__":
     )
     models = [model1, model2]
     metrics = ['acc', 'auc']
-    print(make_leaderboard(models=models, datasets=datasets, metrics=metrics, dataset_path='../../datasets/',
-        save_dir='../../saved_models/', log_file='../../logfile.csv', seed_range=3))
+    results = make_leaderboard(
+        models=models,
+        datasets=datasets,
+        metrics=metrics,
+        dataset_path='../../datasets/',
+        save_dir='../../saved_models/',
+        log_file='../../logfile.csv',
+        seed_range=3,
+    )
+    print(results)
