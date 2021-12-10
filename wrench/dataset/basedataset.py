@@ -165,7 +165,8 @@ class BaseDataset(ABC):
         dataset = self.__class__()
         for i in idx:
             dataset.ids.append(self.ids[i])
-            dataset.labels.append(self.labels[i])
+            if self.labels is not None:
+                dataset.labels.append(self.labels[i])
             dataset.examples.append(self.examples[i])
             dataset.weak_labels.append(self.weak_labels[i])
 

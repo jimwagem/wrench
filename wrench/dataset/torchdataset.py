@@ -37,10 +37,11 @@ class TorchDataset(Dataset):
         idx = idx % self.n_data_
         d = {
             'ids'        : idx,
-            'labels'     : self.labels[idx],
             'weak_labels': self.weak_labels[idx],
             'data'       : self.data[idx],
         }
+        if self.labels is not None:
+            d['labels'] = self.labels[idx]
         if self.features is not None:
             d['features'] = self.features[idx]
         return d
@@ -67,10 +68,11 @@ class ImageTorchDataset(TorchDataset):
         img = self.transform(img)
         d = {
             'ids'        : idx,
-            'labels'     : self.labels[idx],
             'weak_labels': self.weak_labels[idx],
             'image'      : img,
         }
+        if self.labels is not None:
+            d['labels'] = self.labels[idx]
         if self.features is not None:
             d['features'] = self.features[idx]
         return d
