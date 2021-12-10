@@ -4,6 +4,108 @@ import numpy as np
 
 from .syntheticdataset import BaseSyntheticGenerator
 
+class GaussianLF():
+    def __init__(self, means, feature_mask):
+        self.means = means
+        self.feature_mask = feature_mask
+        self.n_class = len(means)
+        
+
+    def predict(self, data_point):
+        min_diff = np.inf
+        best_label = None
+        for index in range(self.n_class):
+            diff_vec = self.means[index] - data_point
+            diff = np.linalg.norm(diff_vec*self.feature_mask)
+            if diff < min_diff:
+                min_diff = diff
+                best_label = index
+        return best_label
+    
+class MultiGaussian(BaseSyntheticGenerator):
+    def __init__(self,
+                n_features: int,
+                n_visible_features: int,
+                n_good_lfs: int,
+                n_class: int,
+                n_bad_lfs: int = 0,
+                n_random_lfs: int = 0,
+                sample_low: int = 0,
+                sample_high: int = 1):
+        super().__init__(n_class=n_class, n_lfs=n_good_lfs + n_bad_lfs + n_random_lfs)
+        self.n_features = n_features
+        self.n_visible_features = n_visible_features
+        self.n_class = n_class
+        self.n_good_lfs = n_good_lfs
+        self.n_bad_lfs = n_bad_lfs
+        self.n_random_lfs = n_random_lfs
+        self.mus = []
+        for i in range(n_class):
+            mu = (sample_high - sample_low) * np.random.random(size=n_features) + sample_low
+            self.mus.append(mu)
+        
+        self.fake_mus = []
+        for i in range(n_class):
+            mu = (sample_high - sample_low) * np.random.random(size=n_features) + sample_low
+            self.fake_mus.append(mu)
+
+        # make labeling functions
+        self.good_lfs = []
+        self.bad_lfs = []
+        for i in range(self.n_good_lfs):
+            indices = np.random.choice(self.n_class, self.n_visible_features)
+            mask = np.zeros(self.n_features)
+            mask[indices] = 1
+            self.good_lfs.append(GaussianLF(self.mus, mask))
+        
+        for i in range(self.n_bad_lfs):
+            indices = np.random.choice(n_class, self.n_visible_features)
+            mask = np.zeros(self.n_features)
+            mask[indices] = 1
+            self.bad_lfs.append(GaussianLF(self.fake_mus, mask))
+        
+    
+    def generate(self, n_data: int = 1000):
+        ids = list(range(n_data))
+        examples = list(range(n_data))
+
+        data_points = []
+        labels = []
+        fake_labels = []
+        for i in range(n_data):
+            label = np.random.randint(self.n_class)
+            fake_label = np.random.randint(self.n_class)
+            labels.append(label)
+            fake_labels.append(fake_label)
+            # std 1
+            dp_real = np.random.normal(self.mus[label], 1).astype(np.float32)
+            dp_fake = np.random.normal(self.fake_mus[fake_label], 1).astype(np.float32)
+            data_points.append((dp_real, dp_fake))
+
+        
+
+        weak_labels = []
+        for dp_real, dp_fake in data_points:
+            dp_weak_labels = []
+            for lf in self.good_lfs:
+                dp_weak_labels.append(lf.predict(dp_real))
+            for lf in self.bad_lfs:
+                dp_weak_labels.append(lf.predict(dp_fake))    
+            for _ in range(self.n_random_lfs):
+                dp_weak_labels.append(np.random.randint(self.n_class))
+            weak_labels.append(dp_weak_labels)
+        
+        features = np.array([np.concatenate(x) for x in data_points])
+
+        return {
+            'ids'        : ids,
+            'examples'   : examples,
+            'labels'     : labels,
+            'weak_labels': weak_labels,
+            'features'   : features
+        }
+
+            
 
 class ConditionalIndependentGenerator(BaseSyntheticGenerator):
     def __init__(self,
