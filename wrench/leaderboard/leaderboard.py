@@ -87,7 +87,8 @@ def make_leaderboard(models, datasets, metrics, dataset_path='../data/', device=
             dataset,
             extract_feature=True,
             extract_fn='bert',
-            cache_name='bert'
+            cache_name='bert',
+            device=device
         )
         dataset_results = []
         for model in models:

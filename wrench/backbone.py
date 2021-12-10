@@ -17,6 +17,7 @@ class BackBone(nn.Module):
             n_class = 1
         self.n_class = n_class
         super(BackBone, self).__init__()
+        # reference: https://stackoverflow.com/a/63477353
         self.dummy_param = nn.Parameter(torch.empty(0))
 
     @property

@@ -12,8 +12,13 @@ seq_dataset_list = ['laptopreview', 'ontonotes', 'ncbi-disease', 'bc5cdr', 'mit-
 
 import shutil
 from pathlib import Path
+import sys
 from os import environ, makedirs
 from os.path import expanduser, join
+
+
+def str_to_class(classname):
+    return getattr(sys.modules[__name__], classname)
 
 
 #### dataset downloading and loading
@@ -47,7 +52,7 @@ def load_dataset(data_home, dataset, dataset_type=None, extract_feature=False, e
     if dataset_type is None:
         dataset_class = get_dataset_type(dataset)
     else:
-        dataset_class = eval(dataset_type)
+        dataset_class = str_to_class(dataset_type)
 
     dataset_path = Path(data_home) / dataset
     train_data = dataset_class(path=dataset_path, split='train')

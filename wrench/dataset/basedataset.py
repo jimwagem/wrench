@@ -213,25 +213,27 @@ class BaseDataset(ABC):
         return lf_summary
 
     def summary(self, n_clusters=10, features=None, return_lf_summary=False):
-        summary_d = {}
         L = np.array(self.weak_labels)
         Y = np.array(self.labels)
-
-        summary_d['n_class'] = self.n_class
-        summary_d['n_data'], summary_d['n_lfs'] = L.shape
-        summary_d['n_uncovered_data'] = np.sum(np.all(L == -1, axis=1))
-        uncovered_rate = summary_d['n_uncovered_data'] / summary_d['n_data']
-        summary_d['overall_coverage'] = (1 - uncovered_rate)
-
         lf_summary = LFAnalysis(L=L).lf_summary(Y=Y)
-        summary_d['lf_avr_acc'] = lf_summary['Emp. Acc.'].mean()
-        summary_d['lf_var_acc'] = lf_summary['Emp. Acc.'].var()
-        summary_d['lf_avr_propensity'] = lf_summary['Coverage'].mean()
-        summary_d['lf_var_propensity'] = lf_summary['Coverage'].var()
-        summary_d['lf_avr_overlap'] = lf_summary['Overlaps'].mean()
-        summary_d['lf_var_overlap'] = lf_summary['Overlaps'].var()
-        summary_d['lf_avr_conflict'] = lf_summary['Conflicts'].mean()
-        summary_d['lf_var_conflict'] = lf_summary['Conflicts'].var()
+
+        columns = [
+            column for column in ['Emp. Acc.', 'Coverage', 'Overlaps', 'Conflicts'] if column in lf_summary.columns
+        ]
+        lf_summary_agg = pd.DataFrame(columns=columns)
+        for column in columns:
+            lf_summary_agg.loc['Mean', column] = lf_summary[column].mean()
+            lf_summary_agg.loc['Var', column] = lf_summary[column].var()
+
+        summary_d = {
+            'n_class': self.n_class,
+            'n_data': L.shape[0],
+            'n_lfs': L.shape[1],
+            'n_uncovered_data': np.sum(np.all(L == -1, axis=1)),
+        }
+
+        uncovered_data = summary_d['n_uncovered_data'] / summary_d['n_data']
+        summary_d['overall_coverage'] = (1 - uncovered_data)
 
         # calc cmi
         from ..utils import calc_cmi_matrix, cluster_based_accuracy_variance
@@ -251,6 +253,6 @@ class BaseDataset(ABC):
             lf_summary['data-dependency'] = pd.Series(acc_var)
 
         if return_lf_summary:
-            return summary_d, lf_summary
+            return summary_d, lf_summary_agg, lf_summary
         else:
-            return summary_d
+            return summary_d, lf_summary_agg
