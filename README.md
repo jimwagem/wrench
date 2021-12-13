@@ -147,6 +147,7 @@ TODO-list: check [this](https://github.com/JieyuZ2/wrench/wiki/TODO-List) out!
 |:--------|:---------|:------|:------|
 | Majority Voting | Label Model | -- | [link](https://github.com/JieyuZ2/wrench/blob/main/wrench/labelmodel/majority_voting.py#L44) |
 | Weighted Majority Voting | Label Model | -- | [link](https://github.com/JieyuZ2/wrench/blob/main/wrench/labelmodel/majority_voting.py#L14) |
+| Optimal Voting (upper bound) | Label Model | -- | [link](https://github.com/sbrugman/wrench/blob/main/wrench/labelmodel/optimal_voting.py) |
 | Dawid-Skene | Label Model | [link](https://www.jstor.org/stable/2346806) | [link](https://github.com/JieyuZ2/wrench/blob/main/wrench/labelmodel/dawid_skene.py#L15) |
 | Data Progamming | Label Model | [link](https://arxiv.org/abs/1605.07723) | [link](https://github.com/JieyuZ2/wrench/blob/main/wrench/labelmodel/generative_model.py#L18) |
 | MeTaL | Label Model | [link](https://arxiv.org/abs/1810.02840) | [link](https://github.com/JieyuZ2/wrench/blob/main/wrench/labelmodel/snorkel.py#L17) |
