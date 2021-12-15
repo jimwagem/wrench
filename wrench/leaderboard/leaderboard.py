@@ -136,6 +136,6 @@ def make_leaderboard(
                 if log_file is not None:
                     model.log_csv(log_file, dataset, metrics, seed_results)
                 model_results.append(seed_results)
-        dataset_results.append(model_results)
+            dataset_results.append(model_results)
         results.append(dataset_results)
     return results
