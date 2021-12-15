@@ -31,7 +31,7 @@ class ModelWrapper:
         kwargs = {}
         # never provide training labels
         if train_data.labels is not None:
-            train_data.labels = None
+            # train_data.labels = None
             self.logger.warning("training labels should not be provided to label model")
 
         if self.label_model is not None:
