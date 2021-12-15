@@ -84,7 +84,7 @@ Install as pip package using:
   
 ## 🔧 Available Datasets
 
-The datasets can be downloaded via [this](https://drive.google.com/drive/folders/1v55IKG2JN9fMtKJWU48B_5_DcPWGnpTq?usp=sharing) (wrench) and [this](https://drive.google.com/drive/folders/1v7IzA3Ab5zDEsRpLBWmJnXo5841tSOlh) (weasel).
+The datasets can be downloaded via [this](https://drive.google.com/drive/folders/1v55IKG2JN9fMtKJWU48B_5_DcPWGnpTq?usp=sharing) (wrench) and [this](https://drive.google.com/drive/folders/1v7IzA3Ab5zDEsRpLBWmJnXo5841tSOlh) (weasel, needs [conversion](https://github.com/sbrugman/wrench/blob/main/datasets/convert_weasel_classification.py)).
 
 or via command line
 
