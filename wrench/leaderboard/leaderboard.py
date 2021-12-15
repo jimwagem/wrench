@@ -27,7 +27,7 @@ class ModelWrapper:
         else:
             self.label_model = None
 
-    def fit(self, train_data, valid_data, metric, evaluation_step=10, patience=100, device='cpu'):
+    def fit(self, train_data, valid_data, metric, evaluation_step=10, patience=100, device='cpu', verbose=True):
         kwargs = {}
         # never provide training labels
         if train_data.labels is not None:
@@ -51,10 +51,11 @@ class ModelWrapper:
             metric=metric,
             patience=patience,
             device=device,
+            verbose=verbose,
             **kwargs,
         )
 
-    def test(self, metrics, test_data):
+    def test(self, test_data, metrics):
         metrics = self.model.test(test_data, metrics)
         return metrics
     
@@ -77,7 +78,8 @@ class ModelWrapper:
 def make_leaderboard(
     models,
     datasets,
-    metrics,
+    binary_metrics,
+    multi_metrics,
     dataset_path='../data/',
     device='cpu',
     save_dir=None,
@@ -100,6 +102,8 @@ def make_leaderboard(
         log_dir.mkdir(exist_ok=True)
 
     for dataset in datasets:
+
+
         logger.info(f"dataset: {dataset}")
         train_data, valid_data, test_data = load_dataset(
             dataset_path,
@@ -109,16 +113,24 @@ def make_leaderboard(
             cache_name='bert',
             device=device
         )
+
+        # Binary and multi class datasets use different metrics:
+        binary= (np.max(test_data.labels == 1))
+        if binary:
+            metrics = binary_metrics
+        else:
+            metrics = multi_metrics
         dataset_results = []
         for model in models:
             logger.info(f"model: {model.name}")
             model_results = []
             for seed in seed_range:
+                # Model training and evaluation.
                 logger.info(f"run: {seed}")
                 set_seed(seed)
                 model.reset()
                 model.fit(train_data, valid_data, metrics[0], device=device)
-                seed_results = model.test(metrics, test_data)
+                seed_results = model.test(test_data, metrics)
                 if save_dir is not None:
                     model.save(save_dir, dataset)
                 if log_file is not None:

@@ -88,3 +88,14 @@ class SyntheticDataset(BaseDataset):
 
     def extract_feature_(self, **kwargs: Any):
         warnings.warn(f'synthetic dataset have no feature!')
+    
+    def get_covered_subset(self):
+        all_covered = True
+        for data_labels in self.weak_labels:
+            if -1 in data_labels:
+                all_covered = False
+        
+        if all_covered:
+            return self
+        else:
+            return super().get_covered_subset()
