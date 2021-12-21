@@ -8,27 +8,30 @@ from wrench.leaderboard import ModelWrapper
 from wrench.endmodel import EndClassifierModel
 from wrench.labelmodel import Snorkel
 import csv
-import matplotlib.pyplot as plt
+
 
 def compare_weights(model, test_data, model_name, n_good_lfs=5):
     if model_name == 'weasel':
         w_list = []
         for x in model._init_valid_dataloader(test_data):
-            w_list.appned(model.extract_weights(x))
+            w_list.append(model.extract_weights(x))
         weights = np.mean(w_list)
     elif model_name == 'snorkel':
         weights = model.labelmodel.get_weights()
     elif model_name == 'flyingsquid':
         weights = model.labelmodel.model.probability_values
-    return (np.mean(weights[:n_good_lfs]), np.mean(weights[n_good_lfs:]))
+    else:
+        raise ValueError("'model_name' not understood")
+    return np.mean(weights[:n_good_lfs]), np.mean(weights[n_good_lfs:])
 
 
-def write_results(log_file, lf_type, acc, std, n_lfs):
+def write_results(log_file, *args):
     with open(log_file, 'a') as csvfile:
         writer = csv.writer(csvfile, delimiter=',')
-        writer.writerow([lf_type, n_lfs, acc, std])
+        writer.writerow(args)
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     device = torch.device('cpu')
     seeds = 20
     
@@ -36,7 +39,12 @@ if __name__=='__main__':
     lf_type='random'
     log_weight=True
 
-    for n_lfs in range(0, 10):
+    # Same as in Figure 2 of Weasel paper
+    lfs2 = list(range(0, 11))
+    # Same as in Figure 4 of Weasel paper
+    # lfs = lfs2 + [15, 20, 25, 50, 75, 100]
+
+    for n_lfs in lfs2:
         print(f'testing {n_lfs}')
         seed_results=[]
         for i in range(seeds):
@@ -59,7 +67,8 @@ if __name__=='__main__':
                 n_constant_lfs=n_random_lfs,
                 n_class=5,
                 sample_low=-5,
-                sample_high=5)
+                sample_high=5,
+            )
             train_dataset = mg.generate_split(split='train', n_data=10000)
             train_dataset.labels = None
             valid_dataset = mg.generate_split(split='valid', n_data=1000)
@@ -114,6 +123,8 @@ if __name__=='__main__':
                     ),
                     name = '2stage_MLP_snorkel'
                 )
+            else:
+                raise ValueError("'model_name' not understood")
             # model.fit(
             #     train_dataset,
             #     valid_dataset,
@@ -131,11 +142,8 @@ if __name__=='__main__':
                 patience=100,
                 device=device,
                 verbose=False
-                )
+            )
             seed_results.append(model.test(test_dataset, 'acc'))
         print(np.mean(seed_results))
         print(np.std(seed_results))
-        write_results(f'./results/multi_gauss_{model_name}.csv', '', np.mean(seed_results), np.std(seed_results), n_lfs)
-    
-    
-
+        write_results(f'./results/multi_gauss_{model_name}.csv', '', n_lfs, np.mean(seed_results), np.std(seed_results))
