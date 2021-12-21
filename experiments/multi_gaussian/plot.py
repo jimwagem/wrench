@@ -9,15 +9,16 @@ if __name__=="__main__":
     bad_results = []
     random_results = []
     constant_results = []
-    x_range = np.arange(10)
     for f in files:
         bad_file_results = []
         random_file_results = []
         constant_file_results = []
+        idxs = set()
         with open(f, 'r') as csvfile:
             reader = csv.reader(csvfile, delimiter=',')
             for row in reader:
                 t=row[0]
+                idx = int(row[1])
                 mean=float(row[2])
                 std=float(row[3])
                 if t=='bad':
@@ -26,10 +27,12 @@ if __name__=="__main__":
                     random_file_results.append((mean, std))
                 elif t=='constant':
                     constant_file_results.append((mean, std))
+                idxs.add(idx)
             bad_results.append(bad_file_results)
             random_results.append(random_file_results)
             constant_results.append(constant_file_results)
-    
+
+    x_range = list(sorted(idxs))
     fig, axs = plt.subplots(3, 1, sharex=True)
     for name, results in zip(names, bad_results):
         means = np.array([e[0] for e in results])
@@ -49,6 +52,7 @@ if __name__=="__main__":
         axs[2].plot(x_range, means, label=name)
         axs[2].fill_between(x_range, means+stds, means-stds, label=name, alpha=0.3)
         axs[2].set_ylim([0, 1.05])
+        axs[2].set_xticks(x_range)
     axs[0].legend()
     axs[1].set_ylabel('Accuracy')
     axs[2].set_xlabel('Number of adversarial labeling functions')
