@@ -30,14 +30,16 @@ class MultiGaussian(BaseSyntheticGenerator):
                 n_class: int,
                 n_bad_lfs: int = 0,
                 n_random_lfs: int = 0,
+                n_constant_lfs: int = 0,
                 sample_low: int = 0,
                 sample_high: int = 1):
-        super().__init__(n_class=n_class, n_lfs=n_good_lfs + n_bad_lfs + n_random_lfs)
+        super().__init__(n_class=n_class, n_lfs=n_good_lfs + n_bad_lfs + n_random_lfs + n_constant_lfs)
         self.n_features = n_features
         self.n_visible_features = n_visible_features
         self.n_class = n_class
         self.n_good_lfs = n_good_lfs
         self.n_bad_lfs = n_bad_lfs
+        self.n_constant_lfs = n_constant_lfs
         self.n_random_lfs = n_random_lfs
         self.mus = []
         for i in range(n_class):
@@ -86,6 +88,7 @@ class MultiGaussian(BaseSyntheticGenerator):
 
         weak_labels = []
         for dp_real, dp_fake in data_points:
+            constant = np.random.randint(self.n_class)
             dp_weak_labels = []
             for lf in self.good_lfs:
                 dp_weak_labels.append(lf.predict(dp_real))
@@ -93,6 +96,8 @@ class MultiGaussian(BaseSyntheticGenerator):
                 dp_weak_labels.append(lf.predict(dp_fake))    
             for _ in range(self.n_random_lfs):
                 dp_weak_labels.append(np.random.randint(self.n_class))
+            for _ in range(self.n_constant_lfs):
+                dp_weak_labels.append(constant)
             weak_labels.append(dp_weak_labels)
         
         features = np.array([np.concatenate(x) for x in data_points])
