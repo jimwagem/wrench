@@ -60,6 +60,7 @@ if __name__=="__main__":
     top = axs[0].twiny()
     top.set_xticks(axs[2].get_xticks())
     top.set_xticklabels([np.round(n_good_lf / (n_good_lf + v), 2) for v in axs[2].get_xticks()])
+    top.set_xlabel('Ratio of good labeling functions')
 
     axs[0].legend()
     axs[1].set_ylabel('Accuracy')
