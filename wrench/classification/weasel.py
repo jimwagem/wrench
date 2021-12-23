@@ -47,7 +47,7 @@ class Encoder(BackBone):
         for i, pp in enumerate(p):
             self.log_class_prior.data[i] = np.log(p[i])
 
-    def forward(self, batch):
+    def forward(self, batch, only_accuracies=False):
         device = self.get_device()
         weak_labels = batch['weak_labels'].to(device)
         features = batch['features'].to(device)
@@ -58,6 +58,8 @@ class Encoder(BackBone):
 
         mask = weak_labels != ABSTAIN
         z = self.acc_scaler * torch.softmax(z, dim=1) * torch.unsqueeze(mask, dim=2)
+        if only_accuracies:
+            return z
 
         one_hot = F.one_hot(weak_labels.long() * mask, num_classes=self.n_class)
         z = z * one_hot
@@ -278,3 +280,7 @@ class WeaSEL(BaseTorchClassModel):
         self._finalize()
 
         return history
+
+    def extract_weights(self, x):
+        z = self.model.encoder.forward(x, only_accuracies=True)
+        return z.detach().mean(axis=(0,2)).numpy()

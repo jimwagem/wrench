@@ -12,14 +12,25 @@ import matplotlib.pyplot as plt
 
 def compare_weights(model, test_data, model_name, n_good_lfs=5):
     if model_name == 'weasel':
-        w_list = []
-        for x in model._init_valid_dataloader(test_data):
-            w_list.appned(model.extract_weights(x))
-        weights = np.mean(w_list)
+        w_list = [
+            model.extract_weights(x)
+            for x in model._init_valid_dataloader(test_data)
+        ]
+        print(w_list)
+        weights = np.mean(w_list, axis=0)
+        print(weights)
     elif model_name == 'snorkel':
-        weights = model.labelmodel.get_weights()
+        weights = model.label_model.model.get_weights()
+        print(weights)
     elif model_name == 'flyingsquid':
-        weights = model.labelmodel.model.probability_values
+        w_list = [
+            fs.estimated_accuracies()
+            for fs in model.label_model.model
+        ]
+        print(w_list)
+        weights = np.mean(w_list, axis = 0)
+    else:
+        raise ValueError("model_name not understood")
     return (np.mean(weights[:n_good_lfs]), np.mean(weights[n_good_lfs:]))
 
 
@@ -33,16 +44,16 @@ if __name__=='__main__':
 
     mg = MultiGaussian(n_features=8, n_visible_features=7,
         n_good_lfs=5,
-        n_bad_lfs=5,
-        n_random_lfs=0,
+        n_bad_lfs=0,
+        n_random_lfs=10,
         n_constant_lfs=0,
         n_class=5,
         sample_low=-5,
         sample_high=5)
-    train_dataset = mg.generate_split(split='train', n_data=100)
+    train_dataset = mg.generate_split(split='train', n_data=1000)
     train_dataset.labels = None
     valid_dataset = mg.generate_split(split='valid', n_data=100)
-    test_dataset = mg.generate_split(split='test', n_data=100)
+    test_dataset = mg.generate_split(split='test', n_data=1000)
     
     model = WeaSEL(
         temperature=1.0,
@@ -52,7 +63,7 @@ if __name__=='__main__':
         batch_size=64,
         real_batch_size=8,
         test_batch_size=128,
-        n_steps=100,
+        n_steps=1000,
         grad_norm=1.0,
 
         backbone='MLP',
@@ -61,7 +72,36 @@ if __name__=='__main__':
         optimizer_lr=5e-5,
         optimizer_weight_decay=0.0,
     )
-    
+    # model = ModelWrapper(
+    #                 model_func=lambda : EndClassifierModel(
+    #                     batch_size=128,
+    #                     test_batch_size=512,
+    #                     n_steps=1000,
+    #                     backbone='MLP',
+    #                     optimizer='Adam',
+    #                     optimizer_lr=1e-2,
+    #                     optimizer_weight_decay=0.0,
+    #                 ),
+    #                 label_model_func=lambda: FlyingSquid(),
+    #                 name = '2stage_MLP_flyingsquid'
+    #             )
+    # model = ModelWrapper(
+    #     model_func=lambda : EndClassifierModel(
+    #         batch_size=128,
+    #         test_batch_size=512,
+    #         n_steps=1000,
+    #         backbone='MLP',
+    #         optimizer='Adam',
+    #         optimizer_lr=1e-2,
+    #         optimizer_weight_decay=0.0,
+    #     ),
+    #     label_model_func=lambda: Snorkel(
+    #         lr=0.01,
+    #         l2=0.0,
+    #         n_epochs=10
+    #     ),
+    #     name = '2stage_MLP_snorkel'
+    # )
     model.fit(
         train_dataset,
         valid_dataset,
@@ -71,7 +111,7 @@ if __name__=='__main__':
         device=device,
         verbose=False
     )
-    compare_weights(model, test_dataset)
+    print(compare_weights(model, test_dataset, "weasel"))
             
     
     
