@@ -24,6 +24,7 @@ ABSTAIN = -1
 class Encoder(BackBone):
     def __init__(self, input_size, n_rules, hidden_size, n_class, temperature, dropout=0.3, balance=None):
         super(Encoder, self).__init__(n_class=n_class)
+        self.use_features = input_size != 0
         self.n_rules = n_rules
         self.acc_scaler = np.sqrt(n_rules) * n_class
         self.temperature = temperature
@@ -50,10 +51,15 @@ class Encoder(BackBone):
     def forward(self, batch, only_accuracies=False):
         device = self.get_device()
         weak_labels = batch['weak_labels'].to(device)
-        features = batch['features'].to(device)
-        batch_size = features.size(0)
+        if self.use_features:
+            features = batch['features'].to(device)
+            batch_size = features.size(0)
 
-        x = torch.cat((weak_labels, features), 1)
+            x = torch.cat((weak_labels, features), 1)
+        else:
+            batch_size = weak_labels.size(0)
+            x = weak_labels
+
         z = self.encoder(x).view(batch_size, self.n_rules, self.n_class) / self.temperature
 
         mask = weak_labels != ABSTAIN
@@ -163,6 +169,7 @@ class WeaSEL(BaseTorchClassModel):
             tolerance: Optional[float] = -1.0,
             device: Optional[torch.device] = None,
             verbose: Optional[bool] = True,
+            use_encoder_features: Optional[bool] = True,
             **kwargs: Any):
 
         if not verbose:
@@ -188,7 +195,7 @@ class WeaSEL(BaseTorchClassModel):
             is_bert=self.is_bert
         )
         model = WeaSELModel(
-            input_size=dataset_train.features.shape[1],
+            input_size=dataset_train.features.shape[1] if use_encoder_features else 0,
             n_rules=n_rules,
             hidden_size=hyperparas['hidden_size'],
             n_class=n_class,
