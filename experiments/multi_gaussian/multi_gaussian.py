@@ -139,8 +139,12 @@ def instantiate_model(model_name : str):
     return model
 
 
-def printd(d):
-    return ",".join([f"{key}='{value}'" for key, value in d.items()])
+def get_key(d):
+    return f"model_name={d['model_name']};" \
+           f"lf_type={d['lf_type']};" \
+           f"n_good_lfs={d['n_good_lfs']};" \
+           f"n_lfs={d['n_lfs']};" \
+           f"run_id={d['run_id']}"
 
 
 if __name__ == '__main__':
@@ -176,10 +180,18 @@ if __name__ == '__main__':
     # Results file name (tip: change to split results per model etc.)
     file_name = f'./results/multi_gauss_new.csv'
 
-    for model_name in models:
-        for lf_type in lf_types:
-            for n_lfs in task_lfs:
-                for i in range(seeds):
+    results = {}
+    # Load previous results
+    if os.path.exists(file_name):
+        prev_results = pd.read_csv(file_name)
+        result_rows = prev_results.to_dict('records')
+        for row in result_rows:
+            results[get_key(row)] = row
+
+    for i in range(seeds):
+        for model_name in models:
+            for lf_type in lf_types:
+                for n_lfs in task_lfs:
                     run_result = {
                         'model_name': model_name,
                         'lf_type': lf_type,
@@ -187,7 +199,11 @@ if __name__ == '__main__':
                         'n_lfs': n_lfs,
                         'run_id': i,
                     }
-                    logger.info(f"experiment with {printd(run_result)}")
+                    key = get_key(run_result)
+                    if key in results:
+                        logger.info(f"experiment {key} loaded from cache")
+                        continue
+                    logger.info(f"running experiment with {key}")
                     set_seed(i)
 
                     train_dataset, valid_dataset, test_dataset = generate_datasets(
@@ -230,3 +246,4 @@ if __name__ == '__main__':
 
                     logger.info('Writing results to file')
                     write_result_pandas(file_name, run_result)
+                    results[key] = run_result
