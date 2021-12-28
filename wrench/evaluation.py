@@ -32,6 +32,11 @@ def accuracy_score_(y_true: np.ndarray, y_proba: np.ndarray, **kwargs):
     return cls_metric.accuracy_score(y_true, y_pred)
 
 
+def mcc(y_true: np.ndarray, y_proba: np.ndarray, **kwargs):
+    y_pred = probs_to_preds(y_proba, **kwargs)
+    return cls_metric.matthews_corrcoef(y_true, y_pred)
+
+
 def f1_score_(y_true: np.ndarray, y_proba: np.ndarray, average: str, **kwargs):
     if average == "binary" and len(np.unique(y_true)) > 2:
         return 0.0
@@ -114,6 +119,7 @@ METRIC = {
     "logloss": cls_metric.log_loss,
     "brier": brier_score_loss,
     "ap": average_precision_score_,
+    "mcc": mcc,
 }
 
 SEQ_METRIC = {
