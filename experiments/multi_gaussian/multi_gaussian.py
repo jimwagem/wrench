@@ -33,12 +33,16 @@ def compare_weights(model, test_data, model_name, n_good_lfs=5):
         raise ValueError(f"model_name '{model_name}' not understood")
 
     good_mean = np.mean(weights[:n_good_lfs])
+    good_std = np.std(weights[:n_good_lfs])
     if len(weights) == n_good_lfs:
         bad_mean = np.nan
+        bad_std = np.nan
     else:
         bad_mean = np.mean(weights[n_good_lfs:])
+        bad_std = np.std(weights[n_good_lfs:])
     total_mean = np.mean(weights)
-    return good_mean, bad_mean, total_mean
+    total_std = np.std(weights)
+    return good_mean, good_std, bad_mean, bad_std, total_mean, total_std
 
 
 def write_result_pandas(file_name, result):
@@ -210,8 +214,11 @@ if __name__ == '__main__':
                     # Get weights from model
                     (
                         run_result['good_mean'],
+                        run_result['good_std'],
                         run_result['bad_mean'],
-                        run_result['total_mean']
+                        run_result['bad_std'],
+                        run_result['total_mean'],
+                        run_result['total_std'],
                     ) = compare_weights(
                         model, test_data=test_dataset, model_name=model_name
                     )
