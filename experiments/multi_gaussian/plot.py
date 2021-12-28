@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 
-def plot_weights(file_name):
+def plot_weights(file_name, show=True):
     # Number of standard deviations
     n_sigma = 2
 
@@ -19,7 +19,7 @@ def plot_weights(file_name):
     df_agg = groups.agg(['mean', 'std'])
 
     # Plot the weights
-    fig, axs = plt.subplots(len(names), len(lf_types), sharex=True)
+    fig, axs = plt.subplots(len(names), len(lf_types), sharex=True, figsize=(10,6))
     for i, lf_type in enumerate(lf_types):
         axs[0, i].set_xlabel(lf_type)
         for j, name in enumerate(names):
@@ -50,10 +50,11 @@ def plot_weights(file_name):
     fig.suptitle('Average labeling function weight')
     plt.tight_layout()
     plt.savefig(f"./results/multi_gaussian_weights.png")
-    plt.show()
+    if show:
+        plt.show()
 
 
-def plot_metric(file_name):
+def plot_metric(file_name, show=True, models=None):
     results = pd.read_csv(file_name)
 
     # Number of standard deviations for uncertainty
@@ -76,10 +77,13 @@ def plot_metric(file_name):
     for metric, metric_name in metrics.items():
         x_labels = list(sorted(n_lf))
         x_range = list(range(len(n_lf)))
-        fig, axs = plt.subplots(len(tasks), 1, sharex=True)
+        fig, axs = plt.subplots(len(tasks), 1, sharex=True, figsize=(10, 8))
         for task_id, task_name in enumerate(tasks):
             task_results = results[results['lf_type'] == task_name]
             for name, group in task_results.groupby('model_name'):
+                # Skip if models are selected
+                if models is not None and name not in models:
+                    continue
                 res = group.groupby('n_lfs')[metric].agg(['mean', 'std'])
                 means = res['mean'].values
                 stds = res['std'].values * n_sigma
@@ -111,11 +115,19 @@ def plot_metric(file_name):
 
         fig.suptitle('Effect of adversarial labeling function on classification')
         plt.tight_layout()
-        plt.savefig(f"./results/multi_gaussian_{metric}.png")
-        plt.show()
+
+        models_suffix = ''
+        if models is not None:
+            models_suffix += "_"
+            models_suffix += "_".join(models)
+        plt.savefig(f"./results/multi_gaussian_{metric}{models_suffix}.png")
+        if show:
+            plt.show()
 
 
 if __name__ == "__main__":
     file_name = "./results/multi_gauss_new.csv"
-    plot_metric(file_name)
-    plot_weights(file_name)
+    show = False
+    plot_metric(file_name, show=show, models=['snorkel', 'flyingsquid', 'weasel'])
+    plot_metric(file_name, show=show)
+    plot_weights(file_name, show=show)
