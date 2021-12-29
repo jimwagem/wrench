@@ -150,7 +150,7 @@ def get_key(d):
 
 if __name__ == '__main__':
     device = torch.device('cpu')
-    seeds = 20
+    seeds = 10
 
     n_good_lfs = 5
     models = [
