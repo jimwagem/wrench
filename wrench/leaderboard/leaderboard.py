@@ -27,7 +27,7 @@ class ModelWrapper:
         else:
             self.label_model = None
 
-    def fit(self, train_data, valid_data, metric, evaluation_step=10, patience=100, device='cpu', verbose=True):
+    def fit(self, train_data, valid_data, metric, evaluation_step=10, patience=100, device='cpu', verbose=True, **fit_kwargs):
         kwargs = {}
         # never provide training labels
         if train_data.labels is not None:
@@ -39,7 +39,8 @@ class ModelWrapper:
 
             self.label_model.fit(
                 dataset_train=train_data,
-                dataset_valid=valid_data
+                dataset_valid=valid_data,
+                **fit_kwargs,
             )
             train_data = train_data.get_covered_subset()
             soft_labels = self.label_model.predict_proba(train_data)

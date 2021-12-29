@@ -1,3 +1,4 @@
+"""Robustness experiment with multi-task gaussian data"""
 import logging
 import os
 
@@ -23,7 +24,7 @@ def compare_weights(model, test_data, model_name, n_good_lfs=5):
         weights = np.mean(w_list, axis=0)
     elif model_name == 'snorkel':
         weights = model.label_model.model.get_weights()
-    elif model_name == 'flyingsquid':
+    elif model_name.startswith('flyingsquid'):
         w_list = [
             fs.estimated_accuracies()
             for fs in model.label_model.model
@@ -101,7 +102,7 @@ def instantiate_model(model_name : str):
             optimizer_lr=5e-5,
             optimizer_weight_decay=0.0,
         )
-    elif model_name == 'flyingsquid':
+    elif model_name.startswith('flyingsquid'):
         model = ModelWrapper(
             model_func=lambda: EndClassifierModel(
                 batch_size=128,
@@ -157,6 +158,7 @@ if __name__ == '__main__':
         'weasel',
         'snorkel',
         'flyingsquid',
+        'flyingsquid_median',
     ]
     lf_types = [
         'bad',
@@ -212,6 +214,8 @@ if __name__ == '__main__':
                     fit_args = {}
                     if model_name == 'weasel_nofeats':
                         fit_args['use_encoder_features'] = False
+                    if model_name == 'flyingsquid_median':
+                        fit_args['solve_method'] = 'triplet_median'
 
                     logger.info("Instantiate and train model")
                     model = instantiate_model(model_name)
