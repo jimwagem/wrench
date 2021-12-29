@@ -3,9 +3,10 @@ import numpy as np
 import pandas as pd
 
 
-def plot_weights(file_name, show=True):
+def plot_weights(file_name, show=True, models=None):
     # Number of standard deviations
     n_sigma = 2
+    # n_sigma = 3
 
     df = pd.read_csv(file_name)
 
@@ -13,22 +14,22 @@ def plot_weights(file_name, show=True):
     df = df.drop(columns=['n_good_lfs', 'acc', 'mcc', 'run_id'])
 
     groups = df.groupby(['model_name', 'lf_type', 'n_lfs'])
-    names = df['model_name'].unique()
+    names = models or df['model_name'].unique()
     lf_types = df['lf_type'].unique()
 
     df_agg = groups.agg(['mean', 'std'])
 
     # Plot the weights
-    fig, axs = plt.subplots(len(names), len(lf_types), sharex=True, figsize=(10,6))
+    fig, axs = plt.subplots(len(names), len(lf_types), sharex=True, figsize=(10, 6))
     for i, lf_type in enumerate(lf_types):
         axs[0, i].set_xlabel(lf_type)
         for j, name in enumerate(names):
             res = df_agg.loc[name, lf_type]
             index = res.index.to_numpy()
             good_means = res['good_mean']['mean']
-            good_stds = res['good_std']['mean'] * n_sigma
+            good_stds = res['good_mean']['std'] * n_sigma
             bad_means = res['bad_mean']['mean']
-            bad_stds = res['bad_std']['mean'] * n_sigma
+            bad_stds = res['bad_mean']['std'] * n_sigma
             # total_means = res['total_mean']['mean']
             # total_std = res['total_std']['mean'] * n_sigma
 
@@ -47,9 +48,14 @@ def plot_weights(file_name, show=True):
 
     axs[0, 0].legend()
 
-    fig.suptitle('Average labeling function weight')
+    fig.suptitle(f'Average labeling function weight\nCI = ${n_sigma}\sigma$')
     plt.tight_layout()
-    plt.savefig(f"./results/multi_gaussian_weights.png")
+    # plt.savefig(f"./results/multi_gaussian_weights_std{n_sigma}.pdf")
+    models_suffix = ''
+    if models is not None:
+        models_suffix += "_"
+        models_suffix += "_".join(models)
+    plt.savefig(f"./results/multi_gaussian_weights{models_suffix}.png")
     if show:
         plt.show()
 
@@ -59,6 +65,7 @@ def plot_metric(file_name, show=True, models=None):
 
     # Number of standard deviations for uncertainty
     n_sigma = 2  # 95%
+    # n_sigma = 3  # 99%
 
     metrics = {
         'acc': 'Accuracy',
@@ -67,6 +74,10 @@ def plot_metric(file_name, show=True, models=None):
     n_lf = results['n_lfs'].unique()
     tasks = results['lf_type'].unique()
     n_good_lf = results['n_good_lfs'].unique()[0]
+    run_counts = results.groupby('run_id')['model_name'].count()
+    n_runs_complete = len(run_counts[run_counts == max(run_counts)])
+    n_runs_total = len(run_counts)
+
     names = {
         'bad': "Orthogonal task",
         'random': 'Random',
@@ -113,7 +124,11 @@ def plot_metric(file_name, show=True, models=None):
         axs[1].set_ylabel(metric_name)
         axs[2].set_xlabel('Number of adversarial labeling functions')
 
-        fig.suptitle('Effect of adversarial labeling function on classification')
+        if n_runs_complete < n_runs_total:
+            runs_text = f'runs {n_runs_complete} complete, {n_runs_total} total'
+        else:
+            runs_text = f'runs {n_runs_complete}'
+        fig.suptitle(f'Effect of adversarial labeling function on classification\nCI = ${n_sigma}\sigma$ $\quad$ {runs_text}')
         plt.tight_layout()
 
         models_suffix = ''
@@ -121,6 +136,7 @@ def plot_metric(file_name, show=True, models=None):
             models_suffix += "_"
             models_suffix += "_".join(models)
         plt.savefig(f"./results/multi_gaussian_{metric}{models_suffix}.png")
+        # plt.savefig(f"./results/multi_gaussian_{metric}{models_suffix}_std{n_sigma}.pdf")
         if show:
             plt.show()
 
@@ -130,4 +146,5 @@ if __name__ == "__main__":
     show = False
     plot_metric(file_name, show=show, models=['snorkel', 'flyingsquid', 'weasel'])
     plot_metric(file_name, show=show)
+    plot_weights(file_name, show=show, models=['snorkel', 'flyingsquid', 'weasel'])
     plot_weights(file_name, show=show)
