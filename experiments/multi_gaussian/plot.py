@@ -50,12 +50,11 @@ def plot_weights(file_name, show=True, models=None):
 
     fig.suptitle(f'Average labeling function weight\nCI = ${n_sigma}\sigma$')
     plt.tight_layout()
-    # plt.savefig(f"./results/multi_gaussian_weights_std{n_sigma}.pdf")
     models_suffix = ''
     if models is not None:
         models_suffix += "_"
         models_suffix += "_".join(models)
-    plt.savefig(f"./results/multi_gaussian_weights{models_suffix}.png")
+    plt.savefig(f"./results/multi_gaussian_weights_std{n_sigma}{models_suffix}.pdf")
     if show:
         plt.show()
 
@@ -135,8 +134,7 @@ def plot_metric(file_name, show=True, models=None):
         if models is not None:
             models_suffix += "_"
             models_suffix += "_".join(models)
-        plt.savefig(f"./results/multi_gaussian_{metric}{models_suffix}.png")
-        # plt.savefig(f"./results/multi_gaussian_{metric}{models_suffix}_std{n_sigma}.pdf")
+        plt.savefig(f"./results/multi_gaussian_{metric}{models_suffix}_std{n_sigma}.pdf")
         if show:
             plt.show()
 

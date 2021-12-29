@@ -1,4 +1,6 @@
-"""Robustness experiment with multi-task gaussian data"""
+"""Robustness experiment with multi-task gaussian data
+17 LF configs (0-10,15,20,25,50,75,100) * 5 models * 3 tasks * 10 seeds = 2550 runs
+"""
 import logging
 import os
 
