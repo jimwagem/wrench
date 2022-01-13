@@ -18,6 +18,12 @@ def plot_weights(file_name, show=True, models=None):
     lf_types = df['lf_type'].unique()
 
     df_agg = groups.agg(['mean', 'std'])
+    
+    names = {
+        'bad': "Orthogonal task",
+        'random': 'Random',
+        'constant': 'Constant',
+    }
 
     # Plot the weights
     fig, axs = plt.subplots(len(names), len(lf_types), sharex=True, figsize=(10, 6))
@@ -34,15 +40,15 @@ def plot_weights(file_name, show=True, models=None):
             # total_std = res['total_std']['mean'] * n_sigma
 
             x_range = list(range(len(index)))
-            axs[j, i].plot(x_range, good_means, label='good')
+            axs[j, i].plot(x_range, good_means, label='bad')
             axs[j, i].fill_between(x_range, good_means + good_stds, good_means - good_stds, alpha=0.3)
-            axs[j, i].plot(x_range, bad_means, label='bad')
+            axs[j, i].plot(x_range, bad_means, label='orthogonal')
             axs[j, i].fill_between(x_range, bad_means + bad_stds, bad_means - bad_stds, alpha=0.3)
             # axs[j, i].plot(x_range, total_means, label='total')
             # axs[j, i].fill_between(x_range, total_means + total_std, total_means - total_std, alpha=0.3)
             axs[j, i].set_xticks(x_range)
             if i == 0:
-                axs[j, i].set_ylabel(name)
+                axs[j, i].set_ylabel(names[name])
             elif i == 2:
                 axs[j, i].set_xticklabels(index)
 
