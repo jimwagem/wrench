@@ -130,9 +130,9 @@ def plot_metric(file_name, show=True, models=None):
         axs[2].set_xlabel('Number of adversarial labeling functions')
 
         if n_runs_complete < n_runs_total:
-            runs_text = f'runs {n_runs_complete} complete, {n_runs_total} total'
+            runs_text = f'{n_runs_complete} runs complete, {n_runs_total} total'
         else:
-            runs_text = f'runs {n_runs_complete}'
+            runs_text = f'{n_runs_complete} runs'
         fig.suptitle(f'Effect of adversarial labeling function on classification\nCI = ${n_sigma}\sigma$ $\quad$ {runs_text}')
         plt.tight_layout()
 
