@@ -7,11 +7,15 @@ import csv
 from ..dataset import load_dataset
 from ..utils import set_seed
 
+def one_hot(x):
+    x = np.array(x)
+    y = np.zeros((x.size, np.max(x) + 1))
+    y[np.arange(x.size), x] = 1
 
 class ModelWrapper:
     """Model wrapper such that we can compare 2stage and end2end models.
     These"""
-    def __init__(self, model_func, name, label_model_func=None):
+    def __init__(self, model_func, name, label_model_func=None, fit_args=None):
         self.model = None
         self.label_model = None
         self.model_func = model_func
@@ -19,6 +23,7 @@ class ModelWrapper:
         self.name = name
         self.reset()
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.fit_args=fit_args or {}
     
     def reset(self):
         self.model = self.model_func()
@@ -27,7 +32,7 @@ class ModelWrapper:
         else:
             self.label_model = None
 
-    def fit(self, train_data, valid_data, metric, evaluation_step=10, patience=100, device='cpu', verbose=True, **fit_kwargs):
+    def fit(self, train_data, valid_data, metric, evaluation_step=10, patience=100, device='cpu', verbose=True):
         kwargs = {}
         # never provide training labels
         if train_data.labels is not None:
@@ -40,11 +45,22 @@ class ModelWrapper:
             self.label_model.fit(
                 dataset_train=train_data,
                 dataset_valid=valid_data,
-                **fit_kwargs,
+                **self.fit_args.get('label_model', {}),
             )
             train_data = train_data.get_covered_subset()
             soft_labels = self.label_model.predict_proba(train_data)
             kwargs['y_train'] = soft_labels
+
+        # Special cases where we want to train on true labels
+        train_type = self.fit_args.get('train_type', '')
+        if train_type == 'ground_truth':
+            ground_truth = train_data.labels
+            print(ground_truth)
+            kwargs['y_train'] = one_hot(ground_truth)
+        elif train_type == 'validation':
+            train_data = valid_data
+            kwargs['y_train'] = one_hot(valid_data.labels)
+
         self.model.fit(
             dataset_train=train_data,
             dataset_valid=valid_data,
@@ -53,6 +69,7 @@ class ModelWrapper:
             patience=patience,
             device=device,
             verbose=verbose,
+            **self.fit_args.get('end_model', {}),
             **kwargs,
         )
 
