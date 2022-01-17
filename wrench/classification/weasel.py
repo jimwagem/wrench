@@ -21,6 +21,25 @@ logger = logging.getLogger(__name__)
 ABSTAIN = -1
 
 
+# Source: https://github.com/autonlab/weasel/blob/main/weasel/utils/optimization.py
+def mig_loss_function(yhat, output2, p=None):
+    # From Max-MIG crowdsourcing paper
+    yhat = F.softmax(yhat, dim=1)
+    output2 = F.softmax(output2, dim=1)
+    batch_size, num_classes = yhat.shape
+    I = torch.from_numpy(np.eye(batch_size), )
+    E = torch.from_numpy(np.ones((batch_size, batch_size)))
+    yhat, output2 = yhat.cpu().float(), output2.cpu().float()
+    if p is None:
+        p = torch.tensor([1 / num_classes for _ in range(num_classes)]).to(yhat.device)
+    new_output = yhat / p
+    m = (new_output @ output2.transpose(1, 0))
+    noise = torch.rand(1) * 0.0001
+    m1 = torch.log(m * I + I * noise + E - I)
+    m2 = m * (E - I)
+    return -(m1.sum() + batch_size) / batch_size + m2.sum() / (batch_size ** 2 - batch_size)
+
+
 class Encoder(BackBone):
     def __init__(self, input_size, n_rules, hidden_size, n_class, temperature, dropout=0.3, balance=None):
         super(Encoder, self).__init__(n_class=n_class)
@@ -76,17 +95,24 @@ class Encoder(BackBone):
 
 
 class WeaSELModel(BackBone):
-    def __init__(self, input_size, n_rules, hidden_size, n_class, temperature, dropout, backbone, balance):
+    def __init__(self, input_size, n_rules, hidden_size, n_class, temperature, dropout, backbone, balance, loss='ce'):
         super(WeaSELModel, self).__init__(n_class=n_class)
         self.backbone = backbone
         self.encoder = Encoder(input_size, n_rules, hidden_size, n_class, temperature, dropout, balance)
         self.forward = self.backbone.forward
+        self.loss = loss
 
     def calculate_loss(self, batch):
         predict_f = self.backbone(batch)
         predict_e = self.encoder(batch)
-        loss_f = cross_entropy_with_probs(predict_f, torch.softmax(predict_e.detach(), dim=-1))
-        loss_e = cross_entropy_with_probs(predict_e, torch.softmax(predict_f.detach(), dim=-1))
+        if self.loss == 'ce':
+            loss_f = cross_entropy_with_probs(predict_f, torch.softmax(predict_e.detach(), dim=-1))
+            loss_e = cross_entropy_with_probs(predict_e, torch.softmax(predict_f.detach(), dim=-1))
+        elif self.loss == 'mig':
+            loss_f = mig_loss_function(predict_f, predict_e.detach())
+            loss_e = mig_loss_function(predict_e, predict_f.detach())
+        else:
+            raise ValueError("loss should be 'ce' or 'mig'")
         loss = loss_e + loss_f
         return loss
 
@@ -170,6 +196,7 @@ class WeaSEL(BaseTorchClassModel):
             device: Optional[torch.device] = None,
             verbose: Optional[bool] = True,
             use_encoder_features: Optional[bool] = True,
+            loss: str = 'ce',
             **kwargs: Any):
 
         if not verbose:
@@ -202,7 +229,8 @@ class WeaSEL(BaseTorchClassModel):
             temperature=hyperparas['temperature'],
             dropout=hyperparas['dropout'],
             backbone=backbone,
-            balance=balance
+            balance=balance,
+            loss=loss,
         )
         self.model = model.to(device)
 
@@ -213,7 +241,7 @@ class WeaSEL(BaseTorchClassModel):
             labeled_dataset,
             n_steps=n_steps,
             config=config,
-            return_features=True,
+            return_features=use_encoder_features,
             return_weak_labels=True,
         )
 
@@ -224,7 +252,7 @@ class WeaSEL(BaseTorchClassModel):
             direction,
             patience,
             tolerance,
-            return_features=True,
+            return_features=use_encoder_features,
             return_weak_labels=True,
         )
 
@@ -290,4 +318,4 @@ class WeaSEL(BaseTorchClassModel):
 
     def extract_weights(self, x):
         z = self.model.encoder.forward(x, only_accuracies=True)
-        return z.detach().mean(axis=(0,2)).numpy()
+        return z.detach().mean(axis=(0, 2)).numpy()
