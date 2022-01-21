@@ -2,6 +2,27 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+# def plot_sum_weights(file_name):
+#     df = pd.read_csv(file_name)
+#     # Unused columns
+#     df = df.drop(columns=['n_good_lfs', 'acc', 'mcc', 'run_id'])
+#     groups = df.groupby(['model_name', 'lf_type', 'n_lfs'])
+#     df_agg = groups.agg(['mean', 'std'])
+#     weasel_bad = df_agg.loc['weasel','bad']
+
+#     index = weasel_bad.index.to_numpy()
+#     good_mean = weasel_bad['good_mean','mean'].to_numpy()
+#     bad_mean = weasel_bad['bad_mean','mean'].to_numpy()
+
+#     plt.plot(index, good_mean*5, label='good_scaled')
+#     plt.plot(index, bad_mean*index, label='bad_scaled')
+#     plt.plot(index, bad_mean, label='bad')
+#     plt.gca().set_xticklabels(index)
+#     plt.gca().set_xticks(list(range(len(index))))
+#     plt.legend()
+#     plt.show()
+    
+
 
 def plot_weights(file_name, show=True, models=None):
     # Number of standard deviations
@@ -147,8 +168,9 @@ def plot_metric(file_name, show=True, models=None):
 
 if __name__ == "__main__":
     file_name = "./results/multi_gauss_new.csv"
-    show = False
-    plot_metric(file_name, show=show, models=['snorkel', 'flyingsquid', 'weasel'])
-    plot_metric(file_name, show=show)
-    plot_weights(file_name, show=show, models=['snorkel', 'flyingsquid', 'weasel'])
-    plot_weights(file_name, show=show)
+    # show = False
+    # plot_metric(file_name, show=show, models=['snorkel', 'flyingsquid', 'weasel'])
+    # plot_metric(file_name, show=show)
+    # plot_weights(file_name, show=show, models=['snorkel', 'flyingsquid', 'weasel'])
+    # plot_weights(file_name, show=show)
+    plot_sum_weights(file_name)

@@ -6,3 +6,5 @@ from .dataset_generator import \
 from .lf_generator import \
     FeatureLFGenerator, \
     NGramLFGenerator
+from .syntheticdataset import \
+    BaseSyntheticGenerator
