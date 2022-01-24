@@ -3,8 +3,8 @@ from .dataset import NumericDataset, TextDataset, RelationDataset, ImageDataset
 from .seqdataset import BaseSeqDataset
 from .torchdataset import sample_batch, TorchDataset, BERTTorchTextClassDataset, BERTTorchRelationClassDataset, ImageTorchDataset
 
-numeric_datasets = ['census', 'basketball', 'tennis', 'commercial']
-text_datasets = ['agnews', 'imdb', 'sms', 'trec', 'yelp', 'youtube', 'imdb_136', 'profteacher', 'amazon', 'crowdsourcing']
+numeric_datasets = ['census', 'basketball', 'tennis', 'commercial', 'imdb_136', 'profteacher', 'amazon']
+text_datasets = ['agnews', 'imdb', 'sms', 'trec', 'yelp', 'youtube',  'crowdsourcing']
 relation_dataset = ['cdr', 'spouse', 'chemprot', 'semeval']
 cls_dataset_list = numeric_datasets + text_datasets + relation_dataset
 bin_cls_dataset_list = numeric_datasets + ['cdr', 'spouse', 'sms', 'yelp', 'imdb', 'imdb_136', 'youtube', 'amazon', 'profteacher', 'crowdsourcing']
