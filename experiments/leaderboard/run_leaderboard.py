@@ -6,7 +6,7 @@ from wrench.labelmodel import FlyingSquid
 from wrench.endmodel import EndClassifierModel
 from wrench.leaderboard import ModelWrapper, make_leaderboard
 
-N_STEPS=2000
+N_STEPS=50
 
 def snorkel_model(dataset_name):
     params = dict(
@@ -153,8 +153,8 @@ if __name__ == "__main__":
 
     # Hyperparams
     device = 'cpu'
-    datasets = ['profteacher', 'imdb', 'imdb_12', 'amazon', 'crowdsourcing']
-    # datasets = [ 'imdb']
+    datasets = ['profteacher', 'imdb', 'imdb_136', 'amazon', 'crowdsourcing']
+    # datasets = ['crowdsourcing']
     binary_metrics = ['acc', 'auc', 'f1_binary', 'mcc'] #, 'f1']
     multi_metrics = ['acc', 'f1_macro', 'mcc']
 
@@ -178,6 +178,6 @@ if __name__ == "__main__":
         dataset_path='../../../datasets/',
         # save_dir='../../saved_models/',
         # log_file='../../logfile.csv',
-        seed_range=3,
+        seed_range=1,
     )
     print(results)
