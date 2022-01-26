@@ -105,3 +105,44 @@ def effective_lf_count(dataname, dataset_path):
     # fig.show()
     plt.show()
     fig.clear()
+
+def per_sample_polarity(dataname, dataset_path, mode='max'):
+  train_data, valid_data, test_data = load_dataset(
+        dataset_path,
+        dataname,
+        extract_feature=False
+    )
+  
+  # Get LF polarity
+  wl = np.array(train_data.weak_labels)
+  n, m = wl.shape
+  lf_polarities = []
+  for i in range(m):
+    s = set(wl[:,i])
+    # Don't count abstains
+    s.discard(-1)
+    print(s)
+    lf_polarities.append(len(s))
+  
+  lf_polarities = np.array(lf_polarities)
+  # print(lf_polarities)
+  dp_polarities = []
+  for dp_wl in wl:
+    non_abstains = ~(dp_wl == -1)
+    dp_lf_pols = lf_polarities[non_abstains]
+    if len(dp_lf_pols) == 0:
+      continue  
+    
+    if mode == 'max':
+      dp_pol = np.max(dp_lf_pols)
+    elif mode == 'mean':
+      dp_pol = np.mean(dp_lf_pols)
+    else:
+      raise Exception("Mode not valid")
+    dp_polarities.append(dp_pol)
+  bins = np.linspace(0, np.max(lf_polarities), 30)
+  plt.hist(dp_polarities, bins)
+  plt.show()
+    
+      
+

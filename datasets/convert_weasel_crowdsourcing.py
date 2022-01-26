@@ -20,7 +20,7 @@ if __name__ == "__main__":
     for name, value in data.items():
         print(name, value.shape)
 
-    datasets_path = Path("../datasets")
+    datasets_path = Path("../../datasets")
     dataset_path = (datasets_path / dataset_name)
     dataset_path.mkdir(exist_ok=True)
 
@@ -29,18 +29,18 @@ if __name__ == "__main__":
 
     train = {}
     for idx, (label, LF, feature) in enumerate(zip(data["labels_train"], data['answers'], data['data_train_vgg16'])):
-        train[str(idx)] = {"label": label.tolist(), "weak_labels": LF.tolist(), "data": {"feature": feature.tolist()}}
+        train[str(idx)] = {"label": label.tolist(), "weak_labels": LF.tolist(), "data": {"feature": feature.flatten().tolist()}}
     (dataset_path / "train.json").write_text(json.dumps(train))
 
     # 250 from test
     valid = {}
     for idx, (label, feature) in enumerate(zip(data['labels_valid'], data['data_valid_vgg16'])):
-        valid[str(idx)] = {"label": label.tolist(), "weak_labels": [], "data": {"feature": feature.tolist()}}
+        valid[str(idx)] = {"label": label.tolist(), "weak_labels": [], "data": {"feature": feature.flatten().tolist()}}
     (dataset_path / "valid.json").write_text(json.dumps(valid))
 
     test = {}
     for idx, (label, feature) in enumerate(zip(data['labels_test'], data['data_test_vgg16'])):
-        test[str(idx)] = {"label": label.tolist(), "weak_labels": [], "data": {"feature": feature.tolist()}}
+        test[str(idx)] = {"label": label.tolist(), "weak_labels": [], "data": {"feature": feature.flatten().tolist()}}
     (dataset_path / "test.json").write_text(json.dumps(test))
 
     datasets = load_dataset(datasets_path, dataset=dataset_name, dataset_type=dtype)

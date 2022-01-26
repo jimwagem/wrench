@@ -76,7 +76,7 @@ class MajorityVoting(BaseLabelModel):
 
     def predict_proba(self, dataset: Union[BaseDataset, np.ndarray], weight: Optional[np.ndarray] = None,
                       **kwargs: Any) -> np.ndarray:
-        L = check_weak_labels(dataset)
+        L = check_weak_labels(dataset).astype(np.int)
         if weight is None:
             weight = np.ones_like(L)
 

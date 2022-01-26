@@ -8,7 +8,7 @@ from ..dataset import load_dataset
 from ..utils import set_seed
 
 def one_hot(x):
-    x = np.array(x)
+    x = np.array(x).astype(np.int)
     y = np.zeros((x.size, np.max(x) + 1))
     y[np.arange(x.size), x] = 1
 
@@ -55,7 +55,6 @@ class ModelWrapper:
         train_type = self.fit_args.get('train_type', '')
         if train_type == 'ground_truth':
             ground_truth = train_data.labels
-            print(ground_truth)
             kwargs['y_train'] = one_hot(ground_truth)
         elif train_type == 'validation':
             train_data = valid_data

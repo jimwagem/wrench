@@ -66,8 +66,9 @@ class BaseDataset(ABC):
         data = json.load(open(data_path, 'r'))
         for i, item in tqdm(data.items()):
             self.ids.append(i)
-            self.labels.append(item['label'])
-            self.weak_labels.append(item['weak_labels'])
+            self.labels.append(int(item['label']))
+            wl = item['weak_labels']
+            self.weak_labels.append([int(elem) for elem in wl])
             self.examples.append(item['data'])
 
         label_path = self.path / f'label.json'

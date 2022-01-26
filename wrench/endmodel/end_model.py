@@ -91,7 +91,6 @@ class EndClassifierModel(BaseTorchClassModel):
             is_bert=self.is_bert
         )
         self.model = model.to(device)
-
         train_dataloader = self._init_train_dataloader(
             dataset_train,
             n_steps=n_steps,
@@ -111,6 +110,7 @@ class EndClassifierModel(BaseTorchClassModel):
                 model.train()
                 optimizer.zero_grad()
                 for batch in train_dataloader:
+                    
                     outputs = model(batch)
                     batch_idx = batch['ids'].to(device)
                     target = y_train[batch_idx]
