@@ -89,22 +89,18 @@ def effective_lf_count(dataname, dataset_path):
         dataname,
         extract_feature=False
     )
-    elf_counts = [[],[],[]]
-    for i, data in enumerate([train_data, valid_data, test_data]):
-        weak_labels = data.weak_labels
-        elf_counts[i].append(len(weak_labels) - weak_labels.count(-1))
-    labels=['train', 'val', 'test']
-    colors=['red','yellow','blue']
-    fig, axs = plt.subplots(3, 1, sharex=True)
-    for i in range(3):
-        axs[i].hist(elf_counts[i], label=labels[i], color=colors[i])
-    axs[1].set_ylabel('Counts')
-    axs[2].set_xlabel('Effective number of labeling functions')
-    fig.suptitle(f'Effective number of labeling functions {dataname}')
-    fig.legend()
+    elf_counts = []
+    weak_labels = train_data.weak_labels
+    for wl in weak_labels:
+      elf_counts.append(len(wl) - wl.count(-1))
+    bins = np.arange(np.max(elf_counts) + 1)
+    plt.hist(elf_counts, bins=bins)
+    plt.xticks(bins)
+    plt.ylabel('Counts')
+    plt.xlabel('Effective number of labeling functions')
+    plt.title(f'Effective number of labeling functions {dataname}')
     # fig.show()
     plt.show()
-    fig.clear()
 
 def per_sample_polarity(dataname, dataset_path, mode='max'):
   train_data, valid_data, test_data = load_dataset(
@@ -142,6 +138,9 @@ def per_sample_polarity(dataname, dataset_path, mode='max'):
     dp_polarities.append(dp_pol)
   bins = np.linspace(0, np.max(lf_polarities), 30)
   plt.hist(dp_polarities, bins)
+  plt.title(f"Per sample polarity for {dataname}")
+  plt.xlabel(f'{mode} polarity per sample')
+  plt.ylabel('counts')
   plt.show()
     
       

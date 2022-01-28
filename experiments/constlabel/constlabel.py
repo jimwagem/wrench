@@ -43,7 +43,7 @@ class ConstLabel(BaseSyntheticGenerator):
         }
 
 if __name__ == '__main__':
-    cl = ConstLabel(use_const_label=False)
+    cl = ConstLabel(use_const_label=True)
     train_data = cl.generate_split(split='train', n_data=1000)
     valid_data = cl.generate_split(split='valid', n_data=500)
     test_data = cl.generate_split(split='test', n_data=500)
