@@ -37,7 +37,8 @@ class ModelWrapper:
         # never provide training labels
         if train_data.labels is not None:
             # train_data.labels = None
-            self.logger.warning("training labels should not be provided to label model")
+            # self.logger.warning("training labels should not be provided to label model")
+            pass
 
         if self.label_model is not None:
             # 2stage model
@@ -102,6 +103,7 @@ def make_leaderboard(
     save_dir=None,
     log_file=None,
     seed_range=1,
+    verbose=True
 ):
     """Trains each model on each datasets and evaluates the different metrics."""
     results = []
@@ -132,7 +134,8 @@ def make_leaderboard(
         )
 
         # Binary and multi class datasets use different metrics:
-        binary= (np.max(test_data.labels == 1))
+        binary= (np.max(test_data.labels) == 1)
+        logger.info(f' {dataset} is binary: {binary}')
         if binary:
             metrics = binary_metrics
         else:
@@ -146,7 +149,7 @@ def make_leaderboard(
                 logger.info(f"run: {seed}")
                 set_seed(seed)
                 model.reset()
-                model.fit(train_data, valid_data, metrics[0], device=device)
+                model.fit(train_data, valid_data, metrics[0], device=device, verbose=verbose)
                 seed_results = model.test(test_data, metrics)
                 if save_dir is not None:
                     model.save(save_dir, dataset)

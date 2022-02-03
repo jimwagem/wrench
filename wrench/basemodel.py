@@ -379,7 +379,6 @@ class BaseTorchClassModel(BaseClassModel, BaseTorchModel, ABC):
                 **config.backbone_config['paras']
             )
         else:
-            print(dataset.features.shape)
             input_size = dataset.features.shape[1]
             model = getattr(backbone, config.backbone_config['name'])(
                 input_size=input_size,

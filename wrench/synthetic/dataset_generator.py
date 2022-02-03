@@ -3,6 +3,22 @@ from typing import Optional, Union
 import numpy as np
 
 from .syntheticdataset import BaseSyntheticGenerator
+from ..dataset import BaseDataset
+
+class BinarizedDataset(BaseDataset):
+    def __init__(self, base_dataset, allowed_classes):
+        super.__init__()
+        ind = [ i for i, l in enumerate(base_dataset.labels) if l in allowed_classes]
+        filtr = lambda e: e if e in allowed_classes else -1
+        weak_labels = [list(map(wl, filtr)) for wl in base_dataset.weak_labels]
+        
+        self.n_lf = len(self.weak_labels[0])
+        self.features = np.array(base_dataset.features)[ind]
+        self.labels = np.array(base_dataset.labels)[ind]
+        self.weak_labels = np.array(base_dataset.labels)[ind]
+        self.n_class = base_dataset.n_class
+        
+
 
 class GaussianLF():
     def __init__(self, means, feature_mask):

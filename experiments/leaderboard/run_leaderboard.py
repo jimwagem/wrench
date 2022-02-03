@@ -6,7 +6,7 @@ from wrench.labelmodel import FlyingSquid
 from wrench.endmodel import EndClassifierModel
 from wrench.leaderboard import ModelWrapper, make_leaderboard
 
-N_STEPS=2000
+N_STEPS=10000
 
 def snorkel_model(dataset_name):
     params = dict(
@@ -36,7 +36,7 @@ def snorkel_model(dataset_name):
     )
     return model, params
 
-def weasel_model(dataset_name):
+def weasel_model(dataset_name, use_balance=True):
     params = dict(
         temperature=1.0,
         dropout=0.3,
@@ -55,6 +55,7 @@ def weasel_model(dataset_name):
         optimizer='AdamW',
         optimizer_lr=5e-5,
         optimizer_weight_decay=0.0,
+        use_balance=use_balance
     )
     model = ModelWrapper(
         model_func=lambda : WeaSEL(
@@ -154,7 +155,7 @@ if __name__ == "__main__":
     # Hyperparams
     device = 'cpu'
     datasets = ['profteacher', 'imdb', 'imdb_136', 'amazon', 'crowdsourcing']
-    # datasets = ['crowdsourcing']
+    # datasets = ['imdb_136']
     binary_metrics = ['acc', 'auc', 'f1_binary', 'mcc'] #, 'f1']
     multi_metrics = ['acc', 'f1_macro', 'mcc']
 
@@ -177,6 +178,7 @@ if __name__ == "__main__":
         multi_metrics=multi_metrics,
         dataset_path='../../../datasets/',
         # save_dir='../../saved_models/',
-        log_file='./results/results.csv',
-        seed_range=5
+        log_file='./results/results_final.csv',
+        seed_range=10,
+        verbose=True
     )

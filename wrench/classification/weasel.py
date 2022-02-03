@@ -67,7 +67,7 @@ class Encoder(BackBone):
         for i, pp in enumerate(p):
             self.log_class_prior.data[i] = np.log(p[i])
 
-    def forward(self, batch, only_accuracies=False):
+    def forward(self, batch, only_accuracies=False, use_balance=True):
         device = self.get_device()
         weak_labels = batch['weak_labels'].to(device)
         if self.use_features:
@@ -89,22 +89,26 @@ class Encoder(BackBone):
         one_hot = F.one_hot(weak_labels.long() * mask, num_classes=self.n_class)
         z = z * one_hot
 
-        logits = torch.sum(z, dim=1) + self.log_class_prior
+        if use_balance:
+            logits = torch.sum(z, dim=1) + self.log_class_prior
+        else:
+            logits = torch.sum(z, dim=1)
 
         return logits
 
 
 class WeaSELModel(BackBone):
-    def __init__(self, input_size, n_rules, hidden_size, n_class, temperature, dropout, backbone, balance, loss='ce'):
+    def __init__(self, input_size, n_rules, hidden_size, n_class, temperature, dropout, backbone, balance, loss='ce', use_balance=True):
         super(WeaSELModel, self).__init__(n_class=n_class)
         self.backbone = backbone
         self.encoder = Encoder(input_size, n_rules, hidden_size, n_class, temperature, dropout, balance)
         self.forward = self.backbone.forward
         self.loss = loss
+        self.use_balance=use_balance
 
     def calculate_loss(self, batch):
         predict_f = self.backbone(batch)
-        predict_e = self.encoder(batch)
+        predict_e = self.encoder(batch, use_balance=self.use_balance)
         if self.loss == 'ce':
             loss_f = cross_entropy_with_probs(predict_f, torch.softmax(predict_e.detach(), dim=-1))
             loss_e = cross_entropy_with_probs(predict_e, torch.softmax(predict_f.detach(), dim=-1))
@@ -153,6 +157,7 @@ class WeaSEL(BaseTorchClassModel):
                  grad_norm: Optional[float] = -1,
                  use_lr_scheduler: Optional[bool] = False,
                  binary_mode: Optional[bool] = False,
+                 use_balance: Optional[bool] = True,
                  **kwargs: Any
                  ):
         super().__init__()
@@ -179,6 +184,7 @@ class WeaSEL(BaseTorchClassModel):
             use_label_model=False,
             **kwargs
         )
+        self.use_balance=use_balance
         self.is_bert = self.config.backbone_config['name'] == 'BERT'
         if self.is_bert:
             self.tokenizer = AutoTokenizer.from_pretrained(self.config.backbone_config['paras']['model_name'])
@@ -231,6 +237,7 @@ class WeaSEL(BaseTorchClassModel):
             backbone=backbone,
             balance=balance,
             loss=loss,
+            use_balance=self.use_balance
         )
         self.model = model.to(device)
 
