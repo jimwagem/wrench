@@ -1,6 +1,6 @@
 import logging
 import torch
-from wrench.dataset import load_dataset
+from wrench.dataset import load_dataset, resplit_dataset
 from wrench.logging import LoggingHandler
 from wrench.classification import WeaSEL
 import sklearn.metrics as cls_metrics
@@ -34,7 +34,7 @@ device = torch.device('cpu')
 
 #### Load dataset
 dataset_path = '../../datasets/'
-data = 'profteacher'
+data = 'youtube'
 # bert_model_name = 'bert-base-cased'
 train_data, valid_data, test_data = load_dataset(
     dataset_path,
@@ -44,7 +44,8 @@ train_data, valid_data, test_data = load_dataset(
     cache_name='bert',
     device=device,
 )
-
+# print(valid_data.ids)
+train_data, valid_data, test_data = resplit_dataset(train_data, valid_data, test_data)
 
 #### Run WeaSEL
 model = WeaSEL(
@@ -74,9 +75,15 @@ model.fit(
     patience=100,
     device=device
 )
+# f1 = model.test(test_data, 'f1_binary')
+# probs = model.predict_proba(test_data)
+# true_labels = test_data.labels
+# max_f1(probs, true_labels)
+# logger.info(f'WeaSEL test f1: {f1}')
 f1 = model.test(test_data, 'f1_binary')
-probs = model.predict_proba(test_data)
-true_labels = test_data.labels
-max_f1(probs, true_labels)
 logger.info(f'WeaSEL test f1: {f1}')
+
+
+
+
 

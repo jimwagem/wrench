@@ -5,6 +5,8 @@ from wrench.labelmodel import Snorkel, MajorityVoting
 from wrench.labelmodel import FlyingSquid
 from wrench.endmodel import EndClassifierModel
 from wrench.leaderboard import ModelWrapper, make_leaderboard
+from wrench.labelmodel.optimal_voting import OptimalVoting
+from wrench.dataset import load_dataset
 
 N_STEPS=10000
 
@@ -40,11 +42,11 @@ def weasel_model(dataset_name, use_balance=True):
     params = dict(
         temperature=1.0,
         dropout=0.3,
-        hidden_size=100,
+        hidden_size=70,
 
-        batch_size=16,
-        real_batch_size=8,
-        test_batch_size=128,
+        batch_size=64,
+        real_batch_size=64,
+        test_batch_size=64,
         n_steps=N_STEPS,
         grad_norm=1.0,
 
@@ -54,7 +56,7 @@ def weasel_model(dataset_name, use_balance=True):
         backbone_fine_tune_layers=-1,  # fine  tune all
         optimizer='AdamW',
         optimizer_lr=5e-5,
-        optimizer_weight_decay=0.0,
+        optimizer_weight_decay=7e-7,
         use_balance=use_balance
     )
     model = ModelWrapper(
@@ -159,26 +161,30 @@ if __name__ == "__main__":
     binary_metrics = ['acc', 'auc', 'f1_binary', 'mcc'] #, 'f1']
     multi_metrics = ['acc', 'f1_macro', 'mcc']
 
-    # Params
-    model_param_pairs = [
-        ground_truth(''),
-        supervised_validation(''),
-        snorkel_model(''),
-        flying_squid('','triplet_median'),
-        flying_squid('','triplet_mean'),
-        majority_vote(''),
-        weasel_model('')
-    ]
-    models = [m for m, _ in model_param_pairs]
-    # Ground truth, supervised val, snorkel, flying_squid_med, flying_squid_mean, maj vote, weasel
-    results = make_leaderboard(
-        models=models,
-        datasets=datasets,
-        binary_metrics=binary_metrics,
-        multi_metrics=multi_metrics,
-        dataset_path='../../../datasets/',
-        # save_dir='../../saved_models/',
-        log_file='./results/results_final.csv',
-        seed_range=10,
-        verbose=True
-    )
+    # # Params
+    # model_param_pairs = [
+    #     ground_truth(''),
+    #     supervised_validation(''),
+    #     snorkel_model(''),
+    #     flying_squid('','triplet_median'),
+    #     flying_squid('','triplet_mean'),
+    #     majority_vote(''),
+    #     weasel_model('')
+    # ]
+    # models = [m for m, _ in model_param_pairs]
+    # # Ground truth, supervised val, snorkel, flying_squid_med, flying_squid_mean, maj vote, weasel
+    # results = make_leaderboard(
+    #     models=models,
+    #     datasets=datasets,
+    #     binary_metrics=binary_metrics,
+    #     multi_metrics=multi_metrics,
+    #     dataset_path='../../../datasets/',
+    #     # save_dir='../../saved_models/',
+    #     log_file='./results/results_final.csv',
+    #     seed_range=10,
+    #     verbose=True
+    # )
+
+    # Test Upper bound
+    ub_model = OptimalVoting()
+

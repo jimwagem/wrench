@@ -24,10 +24,10 @@ if __name__=='__main__':
     path = '../../../datasets'
     bin_datasets = ['profteacher', 'imdb', 'imdb_136', 'amazon']
     multi_datasets = ['crowdsourcing']
-    result_path = './results/results.csv'
+    result_path = './results/results_final.csv'
     # binary_metrics = ['acc', 'auc', 'f1_binary', 'mcc']
     multi_metrics = ['acc', 'f1_macro', 'mcc']
-    binary_metrics = ['acc', 'mcc']
+    binary_metrics = ['acc','auc','f1_binary', 'mcc']
     models = ['Ground_truth_MLP','supervised_validation_MLP','2stage_MLP_snorkel','2stage_MLP_flyingsquid_triplet_median',
         '2stage_MLP_flyingsquid_triplet_mean', '2stage_MLP_MV', 'MLP_weasel']
     labels = ['G truth','validation','snorkel','fs_med', 'fs_mean',
@@ -43,5 +43,5 @@ if __name__=='__main__':
             val = float(row[3])
             res_dict[(model,dataset,metric)].append(val)
     
-    histogram(bin_datasets, models, multi_metrics, labels)
+    histogram(bin_datasets, models, binary_metrics, labels)
     histogram(multi_datasets, models, multi_metrics, labels)

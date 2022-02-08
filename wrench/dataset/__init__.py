@@ -2,6 +2,7 @@ from .basedataset import BaseDataset
 from .dataset import NumericDataset, TextDataset, RelationDataset, ImageDataset
 from .seqdataset import BaseSeqDataset
 from .torchdataset import sample_batch, TorchDataset, BERTTorchTextClassDataset, BERTTorchRelationClassDataset, ImageTorchDataset
+import numpy as np
 
 numeric_datasets = ['census', 'basketball', 'tennis', 'commercial', 'imdb_136', 'profteacher', 'amazon', 'crowdsourcing']
 text_datasets = ['agnews', 'imdb', 'sms', 'trec', 'yelp', 'youtube']
@@ -79,3 +80,43 @@ def load_image_dataset(data_home, dataset, image_root_path, preload_image=True, 
         test_data.extract_feature(extract_fn=extractor_fn, return_extractor=False, **kwargs)
 
     return train_data, valid_data, test_data
+
+def resplit_dataset(train, valid, test):
+    weak_labels = np.concatenate((train.weak_labels, valid.weak_labels, test.weak_labels))
+    labels = np.concatenate((train.labels, valid.labels, test.labels), axis=0)
+    features = np.concatenate((train.features, valid.features, test.features), axis=0)
+    examples = train.examples + valid.examples + test.examples
+    
+
+    n_class = train.n_class
+    n_lf = train.n_lf
+
+    n_train = len(train)
+    n_valid = len(valid)
+    n_test = len(test)
+    
+    indices = np.arange(n_test + n_valid + n_train)
+    np.random.shuffle(indices)
+    train_ind = indices[:n_train]
+    valid_ind = indices[n_train:n_train + n_valid]
+    test_ind = indices[n_train + n_valid:]
+
+    new_datasets = []
+    for ind in [train_ind, valid_ind, test_ind]:
+        ds = NumericDataset()
+        ds.features = np.array([features[i] for i in ind])
+        ds.labels = [labels[i] for i in ind]
+        ds.weak_labels = [weak_labels[i] for i in ind]
+        ds.examples = [examples[i] for i in ind]
+        ds.n_lf = n_lf
+        ds.n_class = n_class
+        ds.ids = [str(i) for i in range(len(ind))]
+        new_datasets.append(ds)
+    
+    new_train = new_datasets[0]
+    new_train.split='train'
+    new_valid = new_datasets[1]
+    new_valid.split='valid'
+    new_test = new_datasets[2]
+    new_test.split='test'
+    return new_train, new_valid, new_test

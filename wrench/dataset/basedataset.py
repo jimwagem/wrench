@@ -15,7 +15,6 @@ from tqdm.auto import tqdm
 
 logger = logging.getLogger(__name__)
 
-
 class BaseDataset(ABC):
     """Abstract data class."""
 
