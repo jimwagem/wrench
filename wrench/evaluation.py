@@ -12,7 +12,7 @@ from snorkel.utils import probs_to_preds
 def metric_to_direction(metric: str) -> str:
     if metric in ["acc", "f1_binary", "f1_micro", "f1_macro", "f1_weighted", "auc", "ap"]:
         return "maximize"
-    if metric in ["logloss", "brier"]:
+    if metric in ["logloss", "brier", "ece"]:
         return "minimize"
     if metric in SEQ_METRIC:
         return "maximize"
@@ -100,6 +100,51 @@ def recall_seq(y_true: List[List], y_pred: List[List], id2label: dict, strict=Tr
         kwargs["scheme"] = IOB2
     return seq_metric.recall_score(y_true, y_pred, **kwargs)
 
+def ece(y_true, y_proba, bin_count=5):
+    n_data = len(y_true)
+    indices = np.arange(n_data)
+    y_pred = probs_to_preds(y_proba)
+    pred_conf = np.array([probs[p] for probs, p in zip(y_proba, y_pred)])
+    bin_ids = np.zeros(n_data)
+
+    for i in range(bin_count):
+        # Bin i contains all predictions with i/bin_count <= confidence < (i+1)/bin_count
+        conf_lower = pred_conf >= i/bin_count
+        conf_upper = pred_conf < (i+1/bin_count)
+        in_bin = conf_lower & conf_upper
+        bin_ids[in_bin] = i
+    
+    bin_correct = np.zeros(bin_count)
+
+    # for bin_id, pred, true in zip(bin_ids, y_pred, y_true):
+    #     bin_sizes[bin_id] += 1
+    #     if pred == true:
+    #         bin_correct[bin_id] += 1
+
+    bin_sizes = np.array([sum(bin_ids == i) for i in range(bin_count)])
+    correct = y_pred == y_true
+    bin_correct = np.array([sum(correct[bin_ids == i]) for i in range(bin_count)])
+    
+    bin_accs = []
+    for n, corr in zip(bin_sizes, bin_correct):
+        if n > 0:
+            bin_accs.append(corr/n)
+        else:
+            bin_accs.append(0.0)
+
+    bin_accs = np.array(bin_accs)
+    cmean = lambda x: 0 if len(x) == 0 else np.mean(x)
+    bin_conf = np.array([cmean(pred_conf[bin_ids == i]) for i in range(bin_count)])
+    diffs = np.abs(bin_accs - bin_conf)
+
+    ece = np.sum(bin_sizes*diffs)/np.sum(bin_sizes)
+    return ece
+
+
+    
+    
+
+
 
 METRIC = {
     "acc": accuracy_score_,
@@ -120,6 +165,7 @@ METRIC = {
     "brier": brier_score_loss,
     "ap": average_precision_score_,
     "mcc": mcc,
+    "ece": ece
 }
 
 SEQ_METRIC = {
