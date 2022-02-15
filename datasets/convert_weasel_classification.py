@@ -7,12 +7,14 @@ from wrench.dataset import load_dataset
 
 
 # source: https://drive.google.com/drive/folders/1v7IzA3Ab5zDEsRpLBWmJnXo5841tSOlh
+# ds = [
+#     ('IMDB_136LFs.npz', "imdb_136", {"0": "Negative", "1": "Positive"}, "TextDataset"),
+#     ('professor_teacher_99LFs.npz', "profteacher", {"0": "prof", "1": "teacher"}, "TextDataset"),
+#     ('Amazon_175LFs.npz', "amazon", {"0": "Negative", "1": "Positive"}, "TextDataset"),
+# ]
 ds = [
-    ('IMDB_136LFs.npz', "imdb_136", {"0": "Negative", "1": "Positive"}, "TextDataset"),
-    ('professor_teacher_99LFs.npz', "profteacher", {"0": "prof", "1": "teacher"}, "TextDataset"),
-    ('Amazon_175LFs.npz', "amazon", {"0": "Negative", "1": "Positive"}, "TextDataset"),
+    ('IMDB_136LFs.npz', "imdb_136", {"0": "Negative", "1": "Positive"}, "NumericDataset")
 ]
-
 
 if __name__ == "__main__":
     for file_name, dataset_name, labels, dtype in ds:
@@ -35,7 +37,7 @@ if __name__ == "__main__":
         if gold is None:
             gold = data["Ytrain_gold"]
 
-        datasets_path = Path("../datasets")
+        datasets_path = Path("../../datasets")
         dataset_path = (datasets_path / dataset_name)
         dataset_path.mkdir(exist_ok=True)
 
@@ -48,15 +50,33 @@ if __name__ == "__main__":
         (dataset_path / "train.json").write_text(json.dumps(train))
 
         # 250 from test
-        valid = {}
-        for idx, (label, feature) in enumerate(zip(data['Ytest'][-250:], data['Xtest'][-250:])):
-            valid[str(idx)] = {"label": label.tolist(), "weak_labels": [], "data": {"feature": feature.tolist()}}
-        (dataset_path / "valid.json").write_text(json.dumps(valid))
+        # Place in valid when splitval[i]==0
+        total_test_valid = len(data['Ytest'])
+        assert (total_test_valid > 250)
+        splitval = np.zeros(total_test_valid)
+        splitval[:250] = 1
+        np.random.shuffle(splitval)
 
+
+        valid = {}
         test = {}
-        for idx, (label, feature) in enumerate(zip(data['Ytest'][:-250], data['Xtest'][:-250])):
-            test[str(idx)] = {"label": label.tolist(), "weak_labels": [], "data": {"feature": feature.tolist()}}
+        valid_counter = 0
+        test_counter = 0
+        for idx, (label, feature) in enumerate(zip(data['Ytest'], data['Xtest'])):
+            if splitval[idx] == 0:
+                dataset = valid
+                counter = valid_counter
+                valid_counter += 1
+            else:
+                dataset = test
+                counter = test_counter
+                test_counter += 1
+            dataset[str(counter)] = {"label": label.tolist(), "weak_labels": [], "data": {"feature": feature.tolist()}}
+        (dataset_path / "valid.json").write_text(json.dumps(valid))
         (dataset_path / "test.json").write_text(json.dumps(test))
+
+        # for idx, (label, feature) in enumerate(zip(data['Ytest'][:-250], data['Xtest'][:-250])):
+        #     test[str(idx)] = {"label": label.tolist(), "weak_labels": [], "data": {"feature": feature.tolist()}}
 
         datasets = load_dataset(datasets_path, dataset=dataset_name, dataset_type=dtype)
         print(datasets)

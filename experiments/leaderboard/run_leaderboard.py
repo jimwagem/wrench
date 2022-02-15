@@ -8,7 +8,7 @@ from wrench.leaderboard import ModelWrapper, make_leaderboard
 from wrench.labelmodel.optimal_voting import OptimalVoting
 from wrench.dataset import load_dataset
 
-N_STEPS=10000
+N_STEPS=3000
 
 def snorkel_model(dataset_name):
     params = dict(
@@ -117,7 +117,7 @@ def supervised_validation(dataset_name):
     params = dict(
         batch_size=128,
         test_batch_size=512,
-        n_steps=N_STEPS,
+        n_steps=1000,
         backbone='MLP',
         optimizer='Adam',
         optimizer_lr=1e-2,
@@ -156,12 +156,12 @@ if __name__ == "__main__":
 
     # Hyperparams
     device = 'cpu'
-    datasets = ['profteacher', 'imdb', 'imdb_136', 'amazon', 'crowdsourcing']
-    # datasets = ['imdb_136']
+    # datasets = ['profteacher', 'imdb', 'imdb_136', 'amazon', 'crowdsourcing']
+    datasets = ['imdb_136']
     binary_metrics = ['acc', 'auc', 'f1_binary', 'mcc'] #, 'f1']
     multi_metrics = ['acc', 'f1_macro', 'mcc']
 
-    # # Params
+    # Params
     # model_param_pairs = [
     #     ground_truth(''),
     #     supervised_validation(''),
@@ -171,20 +171,27 @@ if __name__ == "__main__":
     #     majority_vote(''),
     #     weasel_model('')
     # ]
-    # models = [m for m, _ in model_param_pairs]
-    # # Ground truth, supervised val, snorkel, flying_squid_med, flying_squid_mean, maj vote, weasel
-    # results = make_leaderboard(
-    #     models=models,
-    #     datasets=datasets,
-    #     binary_metrics=binary_metrics,
-    #     multi_metrics=multi_metrics,
-    #     dataset_path='../../../datasets/',
-    #     # save_dir='../../saved_models/',
-    #     log_file='./results/results_final.csv',
-    #     seed_range=10,
-    #     verbose=True
-    # )
+    model_param_pairs = [
+        snorkel_model(''),
+        flying_squid('','triplet_median'),
+        flying_squid('','triplet_mean'),
+        majority_vote(''),
+        weasel_model('')
+    ]
+    models = [m for m, _ in model_param_pairs]
+    # Ground truth, supervised val, snorkel, flying_squid_med, flying_squid_mean, maj vote, weasel
+    results = make_leaderboard(
+        models=models,
+        datasets=datasets,
+        binary_metrics=binary_metrics,
+        multi_metrics=multi_metrics,
+        dataset_path='../../../datasets/',
+        # save_dir='../../saved_models/',
+        log_file='./results/results_new136.csv',
+        seed_range=3,
+        verbose=True
+    )
 
     # Test Upper bound
-    ub_model = OptimalVoting()
+    # ub_model = OptimalVoting()
 

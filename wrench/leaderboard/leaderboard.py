@@ -4,7 +4,7 @@ from pathlib import Path
 import torch
 import numpy as np
 import csv
-from ..dataset import load_dataset
+from ..dataset import load_dataset, resplit_dataset
 from ..utils import set_seed
 
 def one_hot(x):
@@ -103,7 +103,8 @@ def make_leaderboard(
     save_dir=None,
     log_file=None,
     seed_range=1,
-    verbose=True
+    verbose=True,
+    resplit_datasets=False
 ):
     """Trains each model on each datasets and evaluates the different metrics."""
     results = []
@@ -133,6 +134,9 @@ def make_leaderboard(
             device=device
         )
 
+        if resplit_datasets:
+            train_data, valid_data, test_data = resplit_dataset(train_data, valid_data, test_data)
+            
         # Binary and multi class datasets use different metrics:
         binary= (np.max(test_data.labels) == 1)
         logger.info(f' {dataset} is binary: {binary}')

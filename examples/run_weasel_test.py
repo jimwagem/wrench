@@ -44,9 +44,8 @@ train_data, valid_data, test_data = load_dataset(
     cache_name='bert',
     device=device,
 )
-# print(valid_data.ids)
-train_data, valid_data, test_data = resplit_dataset(train_data, valid_data, test_data)
 
+train_data, valid_data, test_data = resplit_dataset(train_data, valid_data, test_data)
 #### Run WeaSEL
 model = WeaSEL(
     temperature=1.0,
@@ -80,9 +79,11 @@ model.fit(
 # true_labels = test_data.labels
 # max_f1(probs, true_labels)
 # logger.info(f'WeaSEL test f1: {f1}')
-f1 = model.test(test_data, 'f1_binary')
-logger.info(f'WeaSEL test f1: {f1}')
 
+# f1 = model.test(test_data, 'f1_binary')
+# logger.info(f'WeaSEL test f1: {f1}')
+ece = model.test(test_data, 'ece')
+logger.info(f'WeaSEL test ece: {ece}')
 
 
 
