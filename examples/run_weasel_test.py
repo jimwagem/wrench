@@ -63,7 +63,7 @@ model = WeaSEL(
     backbone_model_name='MLP',
     backbone_fine_tune_layers=-1,  # fine  tune all
     optimizer='AdamW',
-    optimizer_lr=1e-4,
+    optimizer_lr=5e-5,
     optimizer_weight_decay=7e-7
 )
 model.fit(
@@ -80,8 +80,8 @@ model.fit(
 # max_f1(probs, true_labels)
 # logger.info(f'WeaSEL test f1: {f1}')
 
-# f1 = model.test(test_data, 'f1_binary')
-# logger.info(f'WeaSEL test f1: {f1}')
+f1 = model.test(test_data, 'f1_binary')
+logger.info(f'WeaSEL test f1: {f1}')
 ece = model.test(test_data, 'ece')
 logger.info(f'WeaSEL test ece: {ece}')
 

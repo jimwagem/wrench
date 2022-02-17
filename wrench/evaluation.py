@@ -100,17 +100,22 @@ def recall_seq(y_true: List[List], y_pred: List[List], id2label: dict, strict=Tr
         kwargs["scheme"] = IOB2
     return seq_metric.recall_score(y_true, y_pred, **kwargs)
 
-def ece(y_true, y_proba, bin_count=5):
+def ece(y_true, y_proba, bin_count=5, eps=0.01):
     n_data = len(y_true)
     indices = np.arange(n_data)
     y_pred = probs_to_preds(y_proba)
     pred_conf = np.array([probs[p] for probs, p in zip(y_proba, y_pred)])
     bin_ids = np.zeros(n_data)
 
+    min_conf = np.min(pred_conf)
+    max_conf = np.max(pred_conf)
+    print(f'min_conf: {min_conf}, max_conf: {max_conf}')
+    bins = np.linspace(min_conf, max_conf + eps, bin_count + 1)
+
     for i in range(bin_count):
-        # Bin i contains all predictions with i/bin_count <= confidence < (i+1)/bin_count
-        conf_lower = pred_conf >= i/bin_count
-        conf_upper = pred_conf < (i+1/bin_count)
+        # Bin i contains all predictions with i/bin_count <= confidence < (i+1)/bin_count (u)
+        conf_lower = pred_conf >= bins[i]
+        conf_upper = pred_conf < bins[i+1]
         in_bin = conf_lower & conf_upper
         bin_ids[in_bin] = i
     
