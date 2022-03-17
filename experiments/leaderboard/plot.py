@@ -22,16 +22,16 @@ def histogram(datasets, models, metrics, labels=None):
 
 if __name__=='__main__':
     path = '../../../datasets'
-    bin_datasets = ['profteacher', 'imdb', 'imdb_136', 'amazon']
+    bin_datasets = ['profteacher', 'imdb_12', 'imdb_136', 'amazon']
     multi_datasets = ['crowdsourcing']
-    result_path = './results/results_final.csv'
+    result_path = './results/results.csv'
     # binary_metrics = ['acc', 'auc', 'f1_binary', 'mcc']
-    multi_metrics = ['acc', 'f1_macro', 'mcc']
-    binary_metrics = ['acc','auc','f1_binary', 'mcc']
-    models = ['Ground_truth_MLP','supervised_validation_MLP','2stage_MLP_snorkel','2stage_MLP_flyingsquid_triplet_median',
-        '2stage_MLP_flyingsquid_triplet_mean', '2stage_MLP_MV', 'MLP_weasel']
-    labels = ['G truth','validation','snorkel','fs_med', 'fs_mean',
-        'MV', 'weasel']
+    multi_metrics = ['acc', 'f1_macro', 'mcc', 'ece']
+    binary_metrics = ['acc','auc','f1_binary','f1_max', 'mcc', 'ece']
+    models = ['Ground_truth_MLP','supervised_validation_MLP','2stage_MLP_snorkel',
+        '2stage_MLP_flyingsquid_triplet_mean', '2stage_MLP_MV_hard','2stage_MLP_MV_soft', 'MLP_weasel_no_balance','MLP_weasel_balance']
+    labels = ['G truth','validation','snorkel','fs_mean',
+        'MV hard', 'MV soft', 'weasel', 'weasel cb']
 
     res_dict = defaultdict(lambda: [])
     with open(result_path, newline='') as csvfile:

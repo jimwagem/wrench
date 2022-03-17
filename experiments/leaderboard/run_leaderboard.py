@@ -7,19 +7,19 @@ from wrench.endmodel import EndClassifierModel
 from wrench.leaderboard import ModelWrapper, make_leaderboard
 from wrench.labelmodel.optimal_voting import OptimalVoting
 from wrench.dataset import load_dataset
+import numpy as np
+N_STEPS=20000
 
-N_STEPS=3000
-
-def snorkel_model(dataset_name):
+def snorkel_model():
     params = dict(
         end_model = dict(
-            batch_size=128,
-            test_batch_size=512,
+            batch_size=64,
+            test_batch_size=64,
             n_steps=N_STEPS,
-            backbone='MLP',
+            backbone='FlexMLP',
             optimizer='Adam',
-            optimizer_lr=1e-2,
-            optimizer_weight_decay=0.0,
+            optimizer_lr=5e-5,
+            optimizer_weight_decay=7e-7,
         ),
         label_model = dict(
             lr=0.01,
@@ -38,7 +38,11 @@ def snorkel_model(dataset_name):
     )
     return model, params
 
-def weasel_model(dataset_name, use_balance=True):
+def weasel_model(use_balance=True):
+    if use_balance:
+        balance='balance'
+    else:
+        balance='no_balance'
     params = dict(
         temperature=1.0,
         dropout=0.3,
@@ -50,11 +54,11 @@ def weasel_model(dataset_name, use_balance=True):
         n_steps=N_STEPS,
         grad_norm=1.0,
 
-        backbone='MLP',
+        backbone='FlexMLP',
         # backbone='BERT',
         backbone_model_name='MLP',
         backbone_fine_tune_layers=-1,  # fine  tune all
-        optimizer='AdamW',
+        optimizer='Adam',
         optimizer_lr=5e-5,
         optimizer_weight_decay=7e-7,
         use_balance=use_balance
@@ -63,20 +67,20 @@ def weasel_model(dataset_name, use_balance=True):
         model_func=lambda : WeaSEL(
             **params
         ),
-        name="MLP_weasel"
+        name=f"MLP_weasel_{balance}"
     )
     return model, params
 
-def flying_squid(dataset_name, solve_method='mean'):
+def flying_squid( solve_method='mean'):
     fit_args = dict(label_model={'solve_method': solve_method})
     params = dict(
-        batch_size=128,
-        test_batch_size=512,
+        batch_size=64,
+        test_batch_size=64,
         n_steps=N_STEPS,
-        backbone='MLP',
+        backbone='FlexMLP',
         optimizer='Adam',
-        optimizer_lr=1e-2,
-        optimizer_weight_decay=0.0,
+        optimizer_lr=5e-5,
+        optimizer_weight_decay=7e-7,
     )
     model = ModelWrapper(
             model_func=lambda: EndClassifierModel(
@@ -88,18 +92,18 @@ def flying_squid(dataset_name, solve_method='mean'):
         )
     return model, params
 
-def ground_truth(dataset_name):
+def ground_truth():
     fit_args=dict(
         train_type = 'ground_truth'
     )
     params = dict(
-        batch_size=128,
-        test_batch_size=512,
+        batch_size=64,
+        test_batch_size=64,
         n_steps=N_STEPS,
-        backbone='MLP',
+        backbone='FlexMLP',
         optimizer='Adam',
-        optimizer_lr=1e-2,
-        optimizer_weight_decay=0.0
+        optimizer_lr=5e-5,
+        optimizer_weight_decay=7e-7
     )
     model = ModelWrapper(
         model_func=lambda: EndClassifierModel(
@@ -110,18 +114,18 @@ def ground_truth(dataset_name):
     )
     return model, params
 
-def supervised_validation(dataset_name):
+def supervised_validation():
     fit_args=dict(
         train_type = 'validation'
     )
     params = dict(
-        batch_size=128,
-        test_batch_size=512,
-        n_steps=1000,
-        backbone='MLP',
+        batch_size=64,
+        test_batch_size=64,
+        n_steps=3000,
+        backbone='FlexMLP',
         optimizer='Adam',
-        optimizer_lr=1e-2,
-        optimizer_weight_decay=0.0
+        optimizer_lr=5e-5,
+        optimizer_weight_decay=7e-7
     )
     model = ModelWrapper(
         model_func=lambda: EndClassifierModel(
@@ -132,22 +136,30 @@ def supervised_validation(dataset_name):
     )
     return model, params
 
-def majority_vote(dataset_name):
-    params = dict(
-        batch_size=128,
-        test_batch_size=512,
-        n_steps=N_STEPS,
-        backbone='MLP',
-        optimizer='Adam',
-        optimizer_lr=1e-2,
-        optimizer_weight_decay=0.0
+def majority_vote( hard_label=True):
+    fit_args=dict(
+        hard_label=hard_label
     )
+    params = dict(
+        batch_size=64,
+        test_batch_size=64,
+        n_steps=N_STEPS,
+        backbone='FlexMLP',
+        optimizer='Adam',
+        optimizer_lr=5e-5,
+        optimizer_weight_decay=7e-7
+    )
+    if hard_label:
+        hard_label_string = 'hard'
+    else:
+        hard_label_string = 'soft'
     model = ModelWrapper(
         model_func=lambda: EndClassifierModel(
             **params
         ),
         label_model_func=lambda: MajorityVoting(),
-        name = f'2stage_MLP_MV'
+        name = f'2stage_MLP_MV_{hard_label_string}',
+        fit_args=fit_args
     )
     return model, params
 
@@ -156,27 +168,21 @@ if __name__ == "__main__":
 
     # Hyperparams
     device = 'cpu'
-    # datasets = ['profteacher', 'imdb', 'imdb_136', 'amazon', 'crowdsourcing']
-    datasets = ['imdb_136']
-    binary_metrics = ['acc', 'auc', 'f1_binary', 'mcc'] #, 'f1']
-    multi_metrics = ['acc', 'f1_macro', 'mcc']
+    # datasets = ['profteacher', 'imdb_12', 'imdb_136', 'amazon','crowdsourcing']
+    datasets = ['crowdsourcing']
+    binary_metrics = [ 'auc','acc', 'f1_binary','f1_max', 'mcc', 'ece']
+    multi_metrics = ['acc', 'f1_macro', 'mcc', 'ece']
 
     # Params
-    # model_param_pairs = [
-    #     ground_truth(''),
-    #     supervised_validation(''),
-    #     snorkel_model(''),
-    #     flying_squid('','triplet_median'),
-    #     flying_squid('','triplet_mean'),
-    #     majority_vote(''),
-    #     weasel_model('')
-    # ]
     model_param_pairs = [
-        snorkel_model(''),
-        flying_squid('','triplet_median'),
-        flying_squid('','triplet_mean'),
-        majority_vote(''),
-        weasel_model('')
+        ground_truth(),
+        supervised_validation(),
+        snorkel_model(),
+        flying_squid('triplet_mean'),
+        majority_vote(hard_label=True),
+        majority_vote(hard_label=False),
+        weasel_model(use_balance=False),
+        weasel_model(use_balance=True)
     ]
     models = [m for m, _ in model_param_pairs]
     # Ground truth, supervised val, snorkel, flying_squid_med, flying_squid_mean, maj vote, weasel
@@ -187,9 +193,10 @@ if __name__ == "__main__":
         multi_metrics=multi_metrics,
         dataset_path='../../../datasets/',
         # save_dir='../../saved_models/',
-        log_file='./results/results_new136.csv',
-        seed_range=3,
-        verbose=True
+        log_file='./results/results.csv',
+        seed_range=np.arange(1,4),
+        verbose=True,
+        resplit_datasets=True
     )
 
     # Test Upper bound
