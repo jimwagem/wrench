@@ -20,6 +20,11 @@ DEFAULT_LOGREG_CONFIG = {
 
 }
 
+DEFAULT_FLEXMLP_CONFIG = {
+    'hidden': (50,50,25),
+    'dropout': 0.3
+}
+
 DEFAULT_MLP_CONFIG = {
     'hidden_size': 100,
     'dropout'    : 0.0,
@@ -42,6 +47,7 @@ DEFAULT_BACKBONE_CONFIG = {
 
 DEFAULT_BACKBONE_MAP = {
     'MLP'            : DEFAULT_MLP_CONFIG,
+    'FlexMLP'        : DEFAULT_FLEXMLP_CONFIG,
     'LogReg'         : DEFAULT_LOGREG_CONFIG,
     'ImageClassifier': DEFAULT_IMAGE_CLASSIFIER_CONFIG,
     'BERT'           : DEFAULT_BERT_CONFIG,

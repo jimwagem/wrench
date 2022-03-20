@@ -10,7 +10,7 @@ from snorkel.utils import probs_to_preds
 # Maybe add metric, one versus all, multi-class auc.
 
 def metric_to_direction(metric: str) -> str:
-    if metric in ["acc", "f1_binary", "f1_micro", "f1_macro", "f1_weighted", "auc", "ap"]:
+    if metric in ["acc", "f1_binary", "f1_micro", "f1_macro", "f1_weighted", "auc", "ap", "f1_max"]:
         return "maximize"
     if metric in ["logloss", "brier", "ece"]:
         return "minimize"
@@ -18,6 +18,29 @@ def metric_to_direction(metric: str) -> str:
         return "maximize"
     raise NotImplementedError(f"cannot automatically decide the direction for {metric}!")
 
+
+def max_metric(probs, true_labels, metric, num=100, return_curve=False):
+    p = probs[:,0]
+    max_p = max(p)
+    min_p = min(p)
+    c_range = np.linspace(min_p, max_p, num)
+
+
+    metric_vals = []
+    for c in c_range:
+        preds = np.zeros_like(p)
+        preds[p < c] = 1
+        metric_vals.append(metric(true_labels, preds))
+    c_max_index = np.argmax(metric_vals)
+    c_max = c_range[c_max_index]
+    print(f'Max cutoff {c_max}')
+
+    if return_curve:
+        return metric_vals[c_max_index], c_range, metric_vals
+    return metric_vals[c_max_index]
+
+def f1_max(y_true: np.ndarray, y_proba: np.ndarray, **kwargs):
+    return max_metric(y_proba, y_true, metric=cls_metric.f1_score, **kwargs)
 
 def brier_score_loss(
     y_true: np.ndarray,
@@ -157,6 +180,7 @@ METRIC = {
     "f1_binary": partial(f1_score_, average="binary"),
     "f1_micro": partial(f1_score_, average="micro"),
     "f1_macro": partial(f1_score_, average="macro"),
+    "f1_max": f1_max,
     "f1_weighted": partial(f1_score_, average="weighted"),
     "recall_binary": partial(recall_score_, average="binary"),
     "recall_micro": partial(recall_score_, average="micro"),

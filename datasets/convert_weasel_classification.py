@@ -7,14 +7,16 @@ from wrench.dataset import load_dataset
 
 
 # source: https://drive.google.com/drive/folders/1v7IzA3Ab5zDEsRpLBWmJnXo5841tSOlh
-# ds = [
-#     ('IMDB_136LFs.npz', "imdb_136", {"0": "Negative", "1": "Positive"}, "TextDataset"),
-#     ('professor_teacher_99LFs.npz', "profteacher", {"0": "prof", "1": "teacher"}, "TextDataset"),
-#     ('Amazon_175LFs.npz', "amazon", {"0": "Negative", "1": "Positive"}, "TextDataset"),
-# ]
 ds = [
-    ('IMDB_136LFs.npz', "imdb_136", {"0": "Negative", "1": "Positive"}, "NumericDataset")
+    ('IMDB_136LFs.npz', "imdb_136", {"0": "Negative", "1": "Positive"}, "TextDataset"),
+    ('professor_teacher_99LFs.npz', "profteacher", {"0": "prof", "1": "teacher"}, "TextDataset"),
+    ('Amazon_175LFs.npz', "amazon", {"0": "Negative", "1": "Positive"}, "TextDataset"),
+    ('IMDB_12LFs.npz', "imdb_12", {"0": "Negative", "1": "Positive"}, "TextDataset")
 ]
+# ds = [
+#     ('IMDB_12LFs.npz', "imdb_12", {"0": "Negative", "1": "Positive"}, "TextDataset"),
+#     ('IMDB_136LFs.npz', "imdb_136", {"0": "Negative", "1": "Positive"}, "TextDataset")
+# ]
 
 if __name__ == "__main__":
     for file_name, dataset_name, labels, dtype in ds:
@@ -53,8 +55,8 @@ if __name__ == "__main__":
         # Place in valid when splitval[i]==0
         total_test_valid = len(data['Ytest'])
         assert (total_test_valid > 250)
-        splitval = np.zeros(total_test_valid)
-        splitval[:250] = 1
+        splitval = np.ones(total_test_valid)
+        splitval[:250] = 0
         np.random.shuffle(splitval)
 
 

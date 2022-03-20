@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 device = torch.device('cpu')
 
 #### Load dataset
-dataset_path = '../datasets/'
+dataset_path = '../../datasets/'
 data = 'youtube'
 train_data, valid_data, test_data = load_dataset(
     dataset_path,

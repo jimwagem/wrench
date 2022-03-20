@@ -41,12 +41,17 @@ def mig_loss_function(yhat, output2, p=None):
 
 
 class Encoder(BackBone):
-    def __init__(self, input_size, n_rules, hidden_size, n_class, temperature, dropout=0.3, balance=None):
+    def __init__(self, input_size, n_rules, hidden_size, n_class, temperature, dropout=0.3, balance=None, per_class_acc=True):
         super(Encoder, self).__init__(n_class=n_class)
         self.use_features = input_size != 0
         self.n_rules = n_rules
-        self.acc_scaler = np.sqrt(n_rules) * n_class
+        self.acc_scaler = np.sqrt(self.n_rules)
         self.temperature = temperature
+        self.per_class_acc = per_class_acc
+        encoder_output_size = n_rules
+        if per_class_acc:
+            encoder_output_size *= n_class
+            self.acc_scaler *= n_class
         self.encoder = nn.Sequential(
             nn.Linear(input_size + n_rules, hidden_size),
             nn.BatchNorm1d(hidden_size),
@@ -56,7 +61,7 @@ class Encoder(BackBone):
             nn.BatchNorm1d(hidden_size),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(hidden_size, n_rules * n_class),
+            nn.Linear(hidden_size, encoder_output_size),
         )
         if balance is None:
             self.log_class_prior = nn.Parameter(torch.log(torch.ones(n_class) / n_class), requires_grad=False)
@@ -79,32 +84,37 @@ class Encoder(BackBone):
             batch_size = weak_labels.size(0)
             x = weak_labels
 
-        z = self.encoder(x).view(batch_size, self.n_rules, self.n_class) / self.temperature
+        # Should the accuracies be class dependent
+        if self.per_class_acc:
+            z = self.encoder(x).view(batch_size, self.n_rules, self.n_class) / self.temperature
+        else:
+            z = self.encoder(x).view(batch_size, self.n_rules) / self.temperature
+            z = torch.unsqueeze(z, dim=2)
 
         mask = weak_labels != ABSTAIN
         z = self.acc_scaler * torch.softmax(z, dim=1) * torch.unsqueeze(mask, dim=2)
         if only_accuracies:
             return z
-
         one_hot = F.one_hot(weak_labels.long() * mask, num_classes=self.n_class)
         z = z * one_hot
 
+        
         if use_balance:
             logits = torch.sum(z, dim=1) + self.log_class_prior
         else:
             logits = torch.sum(z, dim=1)
-
         return logits
 
 
 class WeaSELModel(BackBone):
-    def __init__(self, input_size, n_rules, hidden_size, n_class, temperature, dropout, backbone, balance, loss='ce', use_balance=True):
+    def __init__(self, input_size, n_rules, hidden_size, n_class, temperature, dropout, backbone, balance, loss='ce', use_balance=True, per_class_acc=True):
         super(WeaSELModel, self).__init__(n_class=n_class)
         self.backbone = backbone
-        self.encoder = Encoder(input_size, n_rules, hidden_size, n_class, temperature, dropout, balance)
+        self.encoder = Encoder(input_size, n_rules, hidden_size, n_class, temperature, dropout, balance, per_class_acc=per_class_acc)
         self.forward = self.backbone.forward
         self.loss = loss
         self.use_balance=use_balance
+        self.per_class_acc = per_class_acc
 
     def calculate_loss(self, batch):
         predict_f = self.backbone(batch)
@@ -158,6 +168,7 @@ class WeaSEL(BaseTorchClassModel):
                  use_lr_scheduler: Optional[bool] = False,
                  binary_mode: Optional[bool] = False,
                  use_balance: Optional[bool] = True,
+                 per_class_acc: Optional[bool] = True,
                  **kwargs: Any
                  ):
         super().__init__()
@@ -185,6 +196,7 @@ class WeaSEL(BaseTorchClassModel):
             **kwargs
         )
         self.use_balance=use_balance
+        self.per_class_acc=per_class_acc
         self.is_bert = self.config.backbone_config['name'] == 'BERT'
         if self.is_bert:
             self.tokenizer = AutoTokenizer.from_pretrained(self.config.backbone_config['paras']['model_name'])
@@ -237,7 +249,8 @@ class WeaSEL(BaseTorchClassModel):
             backbone=backbone,
             balance=balance,
             loss=loss,
-            use_balance=self.use_balance
+            use_balance=self.use_balance,
+            per_class_acc=self.per_class_acc
         )
         self.model = model.to(device)
 

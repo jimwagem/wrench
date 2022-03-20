@@ -68,6 +68,7 @@ class EndClassifierModel(BaseTorchClassModel):
             logger.setLevel(logging.ERROR)
 
         config = self.config.update(**kwargs)
+        print(config.optimizer_config)
         hyperparas = self.config.hyperparas
         logger.debug(config)
 

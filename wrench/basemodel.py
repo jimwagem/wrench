@@ -126,6 +126,8 @@ class BaseTorchModel(BaseModel, ABC):
         parameters = filter(lambda p: p.requires_grad, model.parameters())
         optimizer = config.optimizer_config['name']
         optimizer_config = config.optimizer_config['paras']
+        lr = optimizer_config['lr']
+        print(f'learning rate {lr}')
         if optimizer == 'default':
             optimizer_ = AdamW(parameters, lr=optimizer_config['lr'], weight_decay=optimizer_config.get('weight_decay', 0.0))
         else:

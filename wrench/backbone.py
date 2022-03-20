@@ -66,6 +66,26 @@ class LogReg(BackBone):
         return x
 
 
+class FlexMLP(BackBone):
+    """MLP where the hidden size need not be constant"""
+    def __init__(self, n_class, input_size, hidden=(50,50,25), dropout=0.0, binary_mode=False, **kwargs):
+        super(FlexMLP, self).__init__(n_class=n_class, binary_mode=binary_mode)
+        layers = [nn.Linear(input_size, hidden[0]), nn.ReLU(), nn.Dropout(p=dropout)]
+        # print(hidden, dropout)
+        for i in range(1, len(hidden)):
+            layers.extend([nn.Linear(hidden[i-1], hidden[i]), nn.ReLU(), nn.Dropout(p=dropout)])
+        self.fcs = nn.Sequential(*layers)
+        self.last_layer = nn.Linear(hidden[-1], self.n_class)
+
+    def forward(self, batch, return_features=False):
+        x = batch['features'].to(self.get_device())
+        h = self.fcs(x)
+        logits = self.last_layer(h)
+        if return_features:
+            return logits, h
+        else:
+            return logits
+
 class MLP(BackBone):
     def __init__(self, n_class, input_size, n_hidden_layers=1, hidden_size=100, dropout=0.0, binary_mode=False, **kwargs):
         super(MLP, self).__init__(n_class=n_class, binary_mode=binary_mode)

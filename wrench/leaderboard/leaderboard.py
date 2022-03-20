@@ -6,11 +6,13 @@ import numpy as np
 import csv
 from ..dataset import load_dataset, resplit_dataset
 from ..utils import set_seed
+from snorkel.utils import probs_to_preds
 
 def one_hot(x):
     x = np.array(x).astype(np.int)
     y = np.zeros((x.size, np.max(x) + 1))
     y[np.arange(x.size), x] = 1
+    return y
 
 class ModelWrapper:
     """Model wrapper such that we can compare 2stage and end2end models.
@@ -51,12 +53,19 @@ class ModelWrapper:
             train_data = train_data.get_covered_subset()
             soft_labels = self.label_model.predict_proba(train_data)
             kwargs['y_train'] = soft_labels
+            if self.fit_args.get('hard_label', False):
+                hard_labels = one_hot(probs_to_preds(soft_labels))
+                kwargs['y_train'] = hard_labels
+                print('got here')
+                print(kwargs['y_train'])
 
         # Special cases where we want to train on true labels
         train_type = self.fit_args.get('train_type', '')
+        print(kwargs['y_train'])
         if train_type == 'ground_truth':
             ground_truth = train_data.labels
             kwargs['y_train'] = one_hot(ground_truth)
+            print('ground truth run')
         elif train_type == 'validation':
             train_data = valid_data
             kwargs['y_train'] = one_hot(valid_data.labels)
@@ -134,8 +143,6 @@ def make_leaderboard(
             device=device
         )
 
-        if resplit_datasets:
-            train_data, valid_data, test_data = resplit_dataset(train_data, valid_data, test_data)
             
         # Binary and multi class datasets use different metrics:
         binary= (np.max(test_data.labels) == 1)
@@ -149,6 +156,9 @@ def make_leaderboard(
             logger.info(f"model: {model.name}")
             model_results = []
             for seed in seed_range:
+
+                if resplit_datasets:
+                    train_data, valid_data, test_data = resplit_dataset(train_data, valid_data, test_data)
                 # Model training and evaluation.
                 logger.info(f"run: {seed}")
                 set_seed(seed)
@@ -160,6 +170,7 @@ def make_leaderboard(
                 if log_file is not None:
                     model.log_csv(log_file, dataset, metrics, seed_results)
                 model_results.append(seed_results)
+                print(seed_results)
             dataset_results.append(model_results)
         results.append(dataset_results)
     return results

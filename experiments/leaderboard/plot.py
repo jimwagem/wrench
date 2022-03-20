@@ -18,6 +18,7 @@ def histogram(datasets, models, metrics, labels=None):
         labels = models
     plt.xticks(ind + width/len(metrics), labels)
     plt.legend(loc='best')
+    plt.tight_layout()
     plt.show()
 
 if __name__=='__main__':

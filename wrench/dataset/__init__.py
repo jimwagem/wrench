@@ -4,7 +4,7 @@ from .seqdataset import BaseSeqDataset
 from .torchdataset import sample_batch, TorchDataset, BERTTorchTextClassDataset, BERTTorchRelationClassDataset, ImageTorchDataset
 import numpy as np
 
-numeric_datasets = ['census', 'basketball', 'tennis', 'commercial', 'imdb_136', 'profteacher', 'amazon', 'crowdsourcing']
+numeric_datasets = ['census', 'basketball', 'tennis', 'commercial', 'imdb_136', 'profteacher', 'amazon', 'crowdsourcing', 'imdb_12']
 text_datasets = ['agnews', 'imdb', 'sms', 'trec', 'yelp', 'youtube']
 relation_dataset = ['cdr', 'spouse', 'chemprot', 'semeval']
 cls_dataset_list = numeric_datasets + text_datasets + relation_dataset
@@ -81,42 +81,94 @@ def load_image_dataset(data_home, dataset, image_root_path, preload_image=True, 
 
     return train_data, valid_data, test_data
 
-def resplit_dataset(train, valid, test):
-    weak_labels = np.concatenate((train.weak_labels, valid.weak_labels, test.weak_labels))
-    labels = np.concatenate((train.labels, valid.labels, test.labels), axis=0)
-    features = np.concatenate((train.features, valid.features, test.features), axis=0)
-    examples = train.examples + valid.examples + test.examples
-    
+def shuffle_sets(sets, n_lf, n_class):
+    weak_labels = np.concatenate([s.weak_labels for s in sets])
+    labels = np.concatenate([s.labels for s in sets], axis=0)
+    features = np.concatenate([s.features for s in sets], axis=0)
+    examples = list(np.concatenate([s.examples for s in sets]))
+    splits = [s.split for s in sets]
 
+    lens = [len(s) for s in sets]
+    indices = np.arange(sum(lens))
+    np.random.shuffle(indices)
+    set_indices = []
+    counter = 0
+    for l in lens:
+        set_indices.append(indices[counter:counter+l])
+        counter += l
+    
+    new_datasets = []
+    for si, split in zip(set_indices, splits):
+        ds = NumericDataset()
+        ds.features = np.array([features[i] for i in si])
+        ds.labels = [labels[i] for i in si]
+        ds.weak_labels = [weak_labels[i] for i in si]
+        ds.examples = [examples[i] for i in si]
+        ds.n_lf = n_lf
+        ds.n_class = n_class
+        ds.ids = [str(i) for i in range(len(si))]
+        ds.split = split
+        new_datasets.append(ds)
+    return new_datasets
+
+def has_labels(ds):
+    """Determine if the train dataset is mixable, (contains valid labels)"""
+    l = ds.labels
+    if l is None:
+        return False
+    if len(l) == 0:
+        return False
+    if len(np.unique(l)) == 0:
+        return False
+    return True
+
+def has_weak_labels(ds):
+    """Determine if the test dataset is mixable, (contains valid weak labels)"""
+    wl = ds.weak_labels
+    if wl is None:
+        return False
+    if len(wl) == 0:
+        return False
+    if len(wl[0]) == 0:
+        return False
+    if len(np.unique(wl)) == 1:
+        return False
+    return True
+
+def resplit_dataset(train, valid, test):
+    # weak_labels = np.concatenate((train.weak_labels, valid.weak_labels, test.weak_labels))
+    # labels = np.concatenate((train.labels, valid.labels, test.labels), axis=0)
+    # features = np.concatenate((train.features, valid.features, test.features), axis=0)
+    # examples = train.examples + valid.examples + test.examples
+    
     n_class = train.n_class
     n_lf = train.n_lf
 
-    n_train = len(train)
-    n_valid = len(valid)
-    n_test = len(test)
-    
-    indices = np.arange(n_test + n_valid + n_train)
-    np.random.shuffle(indices)
-    train_ind = indices[:n_train]
-    valid_ind = indices[n_train:n_train + n_valid]
-    test_ind = indices[n_train + n_valid:]
+    # new_test.split='test'
+    if has_labels(train) and has_weak_labels(valid) and has_weak_labels(test):
+        print('shuffle all')
+        sets = (train, valid, test)
+        shuffled = shuffle_sets(sets, n_lf, n_class)
+        new_train = shuffled[0]
+        new_valid = shuffled[1]
+        new_test = shuffled[2]
+    elif not has_labels(train) or (not has_weak_labels(valid) and not has_weak_labels(test)):
+        print('shuffle test/valid')
+        sets = (valid, test)
+        shuffled = shuffle_sets(sets, n_lf, n_class)
+        new_valid = shuffled[0]
+        new_test = shuffled[1]
+        new_train = train
+    elif has_labels(train) and has_weak_labels(valid):
+        print('shuffle train/valid')
+        sets = (train, valid)
+        shuffled = shuffle_sets(sets, n_lf, n_class)
+        new_train = shuffled[0]
+        new_valid = shuffled[1]
+        new_test = test
+    else:
+        print('can\'t shuffle')
+        new_train, new_valid, new_test = train, valid, test
 
-    new_datasets = []
-    for ind in [train_ind, valid_ind, test_ind]:
-        ds = NumericDataset()
-        ds.features = np.array([features[i] for i in ind])
-        ds.labels = [labels[i] for i in ind]
-        ds.weak_labels = [weak_labels[i] for i in ind]
-        ds.examples = [examples[i] for i in ind]
-        ds.n_lf = n_lf
-        ds.n_class = n_class
-        ds.ids = [str(i) for i in range(len(ind))]
-        new_datasets.append(ds)
-    
-    new_train = new_datasets[0]
-    new_train.split='train'
-    new_valid = new_datasets[1]
-    new_valid.split='valid'
-    new_test = new_datasets[2]
-    new_test.split='test'
+
     return new_train, new_valid, new_test
