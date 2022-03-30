@@ -168,25 +168,25 @@ if __name__ == "__main__":
 
     # Hyperparams
     device = 'cpu'
-    datasets = [ 'imdb_12', 'imdb_136', 'amazon','crowdsourcing']
+    datasets = [ 'profteacher', 'imdb_12', 'imdb_136', 'amazon']
     # datasets = ['crowdsourcing']
     binary_metrics = [ 'auc','acc', 'f1_binary','f1_max', 'mcc', 'ece']
     multi_metrics = ['acc', 'f1_macro', 'mcc', 'ece']
 
     # Params
-    # model_param_pairs = [
-    #     ground_truth(),
-    #     supervised_validation(),
-    #     snorkel_model(),
-    #     flying_squid('triplet_mean'),
-    #     majority_vote(hard_label=True),
-    #     majority_vote(hard_label=False),
-    #     weasel_model(use_balance=False),
-    #     weasel_model(use_balance=True)
-    # ]
     model_param_pairs = [
-        majority_vote(hard_label=True)
+        ground_truth(),
+        supervised_validation(),
+        snorkel_model(),
+        flying_squid('triplet_mean'),
+        majority_vote(hard_label=True),
+        majority_vote(hard_label=False),
+        weasel_model(use_balance=False),
+        weasel_model(use_balance=True)
     ]
+    # model_param_pairs = [
+    #     majority_vote(hard_label=True)
+    # ]
     models = [m for m, _ in model_param_pairs]
     # Ground truth, supervised val, snorkel, flying_squid_med, flying_squid_mean, maj vote, weasel
     results = make_leaderboard(
@@ -196,12 +196,12 @@ if __name__ == "__main__":
         multi_metrics=multi_metrics,
         dataset_path='../../../datasets/',
         # save_dir='../../saved_models/',
-        # log_file='./results/results.csv',
-        seed_range=1,
+        log_file='./results/results.csv',
+        seed_range=4,
         verbose=True,
         resplit_datasets=True
     )
-
+    print(results)
     # Test Upper bound
     # ub_model = OptimalVoting()
 

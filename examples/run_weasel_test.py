@@ -50,7 +50,7 @@ device = torch.device('cpu')
 # set_seed(1)
 #### Load dataset
 dataset_path = '../../datasets/'
-data = 'amazon'
+data = 'youtube'
 # bert_model_name = 'bert-base-cased'
 train_data, valid_data, test_data = load_dataset(
     dataset_path,
@@ -63,45 +63,44 @@ train_data, valid_data, test_data = load_dataset(
 
 # train_data, valid_data, test_data = resplit_dataset(train_data, valid_data, test_data)
 #### Run WeaSEL
-for i in range(5):
-    model = WeaSEL(
-        temperature=1.0,
-        dropout=0.3,
-        hidden_size=70,
+model = WeaSEL(
+    temperature=1.0,
+    dropout=0.3,
+    hidden_size=70,
 
-        batch_size=128,
-        real_batch_size=64,
-        test_batch_size=64,
-        n_steps=20000,
-        grad_norm=1.0,
+    batch_size=128,
+    real_batch_size=64,
+    test_batch_size=64,
+    n_steps=20000,
+    grad_norm=1.0,
 
-        backbone='FlexMLP',
-        # backbone='MLP',
-        # backbone='BERT',
-        backbone_model_name='MLP',
-        backbone_fine_tune_layers=-1,  # fine  tune all
-        optimizer='Adam',
-        optimizer_lr=5e-5,
-        optimizer_weight_decay=7e-7,
-        use_balance=False,
-        per_class_acc=True
-    )
-    model.fit(
-        dataset_train=train_data,
-        dataset_valid=valid_data,
-        evaluation_step=10,
-        metric='auc',
-        patience=100,
-        device=device
-    )
-    metric = model.test(test_data, 'acc')
-    logger.info(f'WeaSEL testacc: {metric}')
-    metric = model.test(test_data, 'f1_binary')
-    logger.info(f'WeaSEL testf1: {metric}')
-    print('zero fraction validation data: ', sum(np.array(valid_data.labels) == 0)/len(valid_data.labels))
-    logger.info(f'max f1: {max_metric(model.predict_proba(test_data), test_data.labels, cls_metrics.f1_score, plot=False)}')
-    # ece = model.test(test_data, 'ece')
-    # logger.info(f'WeaSEL test ece: {ece}')
+    backbone='FlexMLP',
+    # backbone='MLP',
+    # backbone='BERT',
+    backbone_model_name='MLP',
+    backbone_fine_tune_layers=-1,  # fine  tune all
+    optimizer='Adam',
+    optimizer_lr=5e-5,
+    optimizer_weight_decay=7e-7,
+    use_balance=False,
+    per_class_acc=True
+)
+model.fit(
+    dataset_train=train_data,
+    dataset_valid=valid_data,
+    evaluation_step=10,
+    metric='auc',
+    patience=300,
+    device=device,
+    hard_label_step=2000
+)
+metric = model.test(test_data, 'acc')
+logger.info(f'WeaSEL testacc: {metric}')
+metric = model.test(test_data, 'f1_binary')
+logger.info(f'WeaSEL testf1: {metric}')
+logger.info(f'max f1: {max_metric(model.predict_proba(test_data), test_data.labels, cls_metrics.f1_score, plot=True)}')
+# ece = model.test(test_data, 'ece')
+# logger.info(f'WeaSEL test ece: {ece}')
 
 
 

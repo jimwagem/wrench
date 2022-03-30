@@ -10,7 +10,7 @@ from snorkel.utils import probs_to_preds
 # Maybe add metric, one versus all, multi-class auc.
 
 def metric_to_direction(metric: str) -> str:
-    if metric in ["acc", "f1_binary", "f1_micro", "f1_macro", "f1_weighted", "auc", "ap", "f1_max"]:
+    if metric in ["acc", "f1_binary", "f1_micro", "f1_macro", "f1_weighted", "auc", "ap", "f1_max", "mcc"]:
         return "maximize"
     if metric in ["logloss", "brier", "ece"]:
         return "minimize"

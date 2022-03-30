@@ -94,6 +94,20 @@ def cluster_based_accuracy_variance(Y, L, cluster_labels):
         acc_l.append(cluster_acc)
     return np.var(acc_l)
 
+def logit_entropy(x):
+    """Entropy with logits. 
+        x: (batch size, n_class)"""
+    p = torch.softmax(x, dim=1)
+    logp = torch.log_softmax(x, dim=1)
+    batch_entropy = torch.sum(-logp*p, dim=1)
+    return torch.mean(batch_entropy)
+
+def norm_reg(x, p=2):
+    """Calculate distance between x and uniform distribution in the p norm."""
+    B, N = x.shape
+    uniform_dist = torch.ones_like(x)/N
+    batch_diff = torch.norm(torch.softmax(x,dim=1) - uniform_dist, p=p, dim=1)
+    return torch.mean(batch_diff)
 
 def cross_entropy_with_probs(
         input: torch.Tensor,

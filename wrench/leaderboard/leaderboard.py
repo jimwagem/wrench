@@ -56,16 +56,12 @@ class ModelWrapper:
             if self.fit_args.get('hard_label', False):
                 hard_labels = one_hot(probs_to_preds(soft_labels))
                 kwargs['y_train'] = hard_labels
-                print('got here')
-                print(kwargs['y_train'])
 
         # Special cases where we want to train on true labels
         train_type = self.fit_args.get('train_type', '')
-        print(kwargs['y_train'])
         if train_type == 'ground_truth':
             ground_truth = train_data.labels
             kwargs['y_train'] = one_hot(ground_truth)
-            print('ground truth run')
         elif train_type == 'validation':
             train_data = valid_data
             kwargs['y_train'] = one_hot(valid_data.labels)

@@ -14,8 +14,7 @@ from ..basemodel import BaseTorchClassModel, BaseLabelModel
 from ..config import Config
 from ..dataset import BaseDataset
 from ..dataset.utils import split_labeled_unlabeled
-from ..utils import cross_entropy_with_probs
-
+from ..utils import cross_entropy_with_probs, logit_entropy, norm_reg
 logger = logging.getLogger(__name__)
 
 ABSTAIN = -1
@@ -116,18 +115,42 @@ class WeaSELModel(BackBone):
         self.use_balance=use_balance
         self.per_class_acc = per_class_acc
 
-    def calculate_loss(self, batch):
+    def calculate_loss(self, batch, use_hard_labels=False, reg_term=None):
         predict_f = self.backbone(batch)
         predict_e = self.encoder(batch, use_balance=self.use_balance)
         if self.loss == 'ce':
-            loss_f = cross_entropy_with_probs(predict_f, torch.softmax(predict_e.detach(), dim=-1))
-            loss_e = cross_entropy_with_probs(predict_e, torch.softmax(predict_f.detach(), dim=-1))
+            target_e = torch.softmax(predict_e.detach(), dim=-1)
+            target_f = torch.softmax(predict_f.detach(), dim=-1)
+            if use_hard_labels:
+                target_e = F.one_hot(torch.argmax(target_e, dim=-1), num_classes=self.n_class)
+                target_f = F.one_hot(torch.argmax(target_f, dim=-1), num_classes=self.n_class)
+            # loss_f = cross_entropy_with_probs(predict_f, target_e) - logit_entropy(predict_e.detach())
+            # loss_e = cross_entropy_with_probs(predict_e, target_f) - logit_entropy(predict_f.detach())
+            loss_f = cross_entropy_with_probs(predict_f, target_e) 
+            loss_e = cross_entropy_with_probs(predict_e, target_f) 
         elif self.loss == 'mig':
             loss_f = mig_loss_function(predict_f, predict_e.detach())
             loss_e = mig_loss_function(predict_e, predict_f.detach())
         else:
             raise ValueError("loss should be 'ce' or 'mig'")
+            
         loss = loss_e + loss_f
+        if reg_term == 'entropy':
+            entropy_e = logit_entropy(predict_e)
+            entropy_f = logit_entropy(predict_f)
+            # print(entropy_e.item(), entropy_f.item())
+            w = 0.5
+            loss += w*(entropy_e)
+        elif reg_term == 'L1':
+            d_e = norm_reg(predict_e, p=1)
+            d_f = norm_reg(predict_f, p=1)
+            w = 0.5
+            loss += -w*(d_e)
+        elif reg_term == 'L2':
+            d_e = norm_reg(predict_e, p=2)
+            d_f = norm_reg(predict_f, p=2)
+            w = 0.5
+            loss += -w*(d_e)
         return loss
 
 
@@ -215,6 +238,9 @@ class WeaSEL(BaseTorchClassModel):
             verbose: Optional[bool] = True,
             use_encoder_features: Optional[bool] = True,
             loss: str = 'ce',
+            hard_label_step: int = -1,
+            reg_term: Optional[str] = None,
+            init_model: Optional[bool] = True,
             **kwargs: Any):
 
         if not verbose:
@@ -225,6 +251,9 @@ class WeaSEL(BaseTorchClassModel):
         logger.debug(config)
 
         n_steps = hyperparas['n_steps']
+        if hard_label_step == -1:
+            hard_label_step = n_steps
+        
         if hyperparas['real_batch_size'] == -1 or hyperparas['batch_size'] < hyperparas['real_batch_size'] or not self.is_bert:
             hyperparas['real_batch_size'] = hyperparas['batch_size']
         accum_steps = hyperparas['batch_size'] // hyperparas['real_batch_size']
@@ -233,26 +262,29 @@ class WeaSEL(BaseTorchClassModel):
         n_class = dataset_train.n_class
         balance = init_balance(n_class, dataset_valid=dataset_valid)
 
-        backbone = self._init_model(
-            dataset=dataset_train,
-            n_class=dataset_train.n_class,
-            config=config,
-            is_bert=self.is_bert
-        )
-        model = WeaSELModel(
-            input_size=dataset_train.features.shape[1] if use_encoder_features else 0,
-            n_rules=n_rules,
-            hidden_size=hyperparas['hidden_size'],
-            n_class=n_class,
-            temperature=hyperparas['temperature'],
-            dropout=hyperparas['dropout'],
-            backbone=backbone,
-            balance=balance,
-            loss=loss,
-            use_balance=self.use_balance,
-            per_class_acc=self.per_class_acc
-        )
-        self.model = model.to(device)
+        if init_model:
+            backbone = self._init_model(
+                dataset=dataset_train,
+                n_class=dataset_train.n_class,
+                config=config,
+                is_bert=self.is_bert
+            )
+            model = WeaSELModel(
+                input_size=dataset_train.features.shape[1] if use_encoder_features else 0,
+                n_rules=n_rules,
+                hidden_size=hyperparas['hidden_size'],
+                n_class=n_class,
+                temperature=hyperparas['temperature'],
+                dropout=hyperparas['dropout'],
+                backbone=backbone,
+                balance=balance,
+                loss=loss,
+                use_balance=self.use_balance,
+                per_class_acc=self.per_class_acc
+            )
+            self.model = model.to(device)
+        else:
+            model = self.model
 
         optimizer, scheduler = self._init_optimizer_and_lr_scheduler(model, config)
 
@@ -287,6 +319,7 @@ class WeaSEL(BaseTorchClassModel):
 
         history = {}
         last_step_log = {}
+        use_hard_labels = (hard_label_step == 0)
         try:
             with trange(n_steps, desc="[TRAIN] WeaSEL", unit="steps", disable=not verbose, ncols=150, position=0, leave=True) as pbar:
                 cnt = 0
@@ -294,8 +327,8 @@ class WeaSEL(BaseTorchClassModel):
                 model.train()
                 optimizer.zero_grad()
                 for labeled_batch in labeled_dataloader:
-
-                    loss = model.calculate_loss(labeled_batch)
+                    
+                    loss = model.calculate_loss(labeled_batch, use_hard_labels=use_hard_labels, reg_term=reg_term)
                     loss.backward()
                     cnt += 1
 
@@ -306,6 +339,7 @@ class WeaSEL(BaseTorchClassModel):
                         if scheduler is not None:
                             scheduler.step()
                         optimizer.zero_grad()
+                        
                         step += 1
 
                         if valid_flag and step % evaluation_step == 0:
@@ -328,6 +362,8 @@ class WeaSEL(BaseTorchClassModel):
 
                         if step >= n_steps:
                             break
+                        if step >= hard_label_step:
+                            use_hard_labels = True
 
         except KeyboardInterrupt:
             logger.info(f'KeyboardInterrupt! do not terminate the process in case need to save the best model')
