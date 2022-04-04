@@ -92,6 +92,7 @@ class Encoder(BackBone):
 
         mask = weak_labels != ABSTAIN
         z = self.acc_scaler * torch.softmax(z, dim=1) * torch.unsqueeze(mask, dim=2)
+        # z = self.acc_scaler * torch.sigmoid(z) * torch.unsqueeze(mask, dim=2)
         if only_accuracies:
             return z
         one_hot = F.one_hot(weak_labels.long() * mask, num_classes=self.n_class)
@@ -139,18 +140,18 @@ class WeaSELModel(BackBone):
             entropy_e = logit_entropy(predict_e)
             entropy_f = logit_entropy(predict_f)
             # print(entropy_e.item(), entropy_f.item())
-            w = 0.5
+            w = 0.05
             loss += w*(entropy_e)
         elif reg_term == 'L1':
             d_e = norm_reg(predict_e, p=1)
             d_f = norm_reg(predict_f, p=1)
-            w = 0.5
-            loss += -w*(d_e)
+            w = 0.2
+            loss += -w*d_e
         elif reg_term == 'L2':
             d_e = norm_reg(predict_e, p=2)
             d_f = norm_reg(predict_f, p=2)
             w = 0.5
-            loss += -w*(d_e)
+            loss += -w*d_e
         return loss
 
 
@@ -241,6 +242,7 @@ class WeaSEL(BaseTorchClassModel):
             hard_label_step: int = -1,
             reg_term: Optional[str] = None,
             init_model: Optional[bool] = True,
+            finalize: Optional[bool] = True,
             **kwargs: Any):
 
         if not verbose:
@@ -367,8 +369,8 @@ class WeaSEL(BaseTorchClassModel):
 
         except KeyboardInterrupt:
             logger.info(f'KeyboardInterrupt! do not terminate the process in case need to save the best model')
-
-        self._finalize()
+        if finalize:
+            self._finalize()
 
         return history
 

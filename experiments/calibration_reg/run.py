@@ -60,9 +60,9 @@ if __name__=="__main__":
         cache_name='bert',
         device=device,
     )
-    save=True
-    for reg in ['L1', 'None']:
-        set_seed(0)
+    save=False
+    for reg in ['L1']:
+        # set_seed(1)
         model = WeaSEL(
             temperature=1.0,
             dropout=0.3,
@@ -71,7 +71,7 @@ if __name__=="__main__":
             batch_size=128,
             real_batch_size=64,
             test_batch_size=64,
-            n_steps=10000,
+            n_steps=20000,
             grad_norm=1.0,
 
             backbone='FlexMLP',
@@ -86,6 +86,17 @@ if __name__=="__main__":
             per_class_acc=False
         )
         metric = 'auc' if reg == 'None' else 'logloss'
+        # model.fit(
+        #     dataset_train=train_data,
+        #     dataset_valid=valid_data,
+        #     evaluation_step=10,
+        #     metric='auc',
+        #     patience=200,
+        #     device=device,
+        #     hard_label_step=-1,
+        #     init_model=True,
+        #     reg_term=None
+        # )
         model.fit(
             dataset_train=train_data,
             dataset_valid=valid_data,
@@ -95,7 +106,8 @@ if __name__=="__main__":
             device=device,
             hard_label_step=-1,
             init_model=True,
-            reg_term=reg
+            reg_term=reg,
+            finalize=False
         )
         labels = test_data.labels
         probs = model.predict_proba(test_data)
