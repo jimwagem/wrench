@@ -10,6 +10,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from wrench.labelmodel import Snorkel
 from wrench.endmodel import EndClassifierModel
+from wrench.synthetic.dataset_generator import SubSampledLFDataset
+
 def max_metric(probs, true_labels, metric, num=100, plot=False):
     p = probs[:,0]
     max_p = max(p)
@@ -50,7 +52,7 @@ device = torch.device('cpu')
 # set_seed(1)
 #### Load dataset
 dataset_path = '../../datasets/'
-data = 'youtube'
+data = 'imdb_136'
 # bert_model_name = 'bert-base-cased'
 train_data, valid_data, test_data = load_dataset(
     dataset_path,
@@ -60,7 +62,7 @@ train_data, valid_data, test_data = load_dataset(
     cache_name='bert',
     device=device,
 )
-
+train_data = SubSampledLFDataset(train_data)
 # train_data, valid_data, test_data = resplit_dataset(train_data, valid_data, test_data)
 #### Run WeaSEL
 model = WeaSEL(
@@ -83,22 +85,24 @@ model = WeaSEL(
     optimizer_lr=5e-5,
     optimizer_weight_decay=7e-7,
     use_balance=False,
-    per_class_acc=True
+    per_class_acc=False,
+    use_sigmoid=True,
+    reg_weight=0.2
 )
 model.fit(
     dataset_train=train_data,
     dataset_valid=valid_data,
     evaluation_step=10,
-    metric='auc',
-    patience=300,
+    metric='logloss',
+    patience=200,
     device=device,
-    hard_label_step=2000
+    reg_term='L1'
 )
 metric = model.test(test_data, 'acc')
 logger.info(f'WeaSEL testacc: {metric}')
 metric = model.test(test_data, 'f1_binary')
 logger.info(f'WeaSEL testf1: {metric}')
-logger.info(f'max f1: {max_metric(model.predict_proba(test_data), test_data.labels, cls_metrics.f1_score, plot=True)}')
+logger.info(f'max f1: {max_metric(model.predict_proba(test_data), test_data.labels, cls_metrics.matthews_corrcoef, plot=True)}')
 # ece = model.test(test_data, 'ece')
 # logger.info(f'WeaSEL test ece: {ece}')
 

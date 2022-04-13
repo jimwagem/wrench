@@ -109,6 +109,29 @@ def norm_reg(x, p=2):
     batch_diff = torch.norm(torch.softmax(x,dim=1) - uniform_dist, p=p, dim=1)
     return torch.mean(batch_diff)
 
+def acc_reg(accs):
+    """Accs: (batch_size, n_lf, n_class)
+    Returns -log(accuracy) summed over all LFs.
+    zeros are ignored"""
+    class_sum = torch.sum(accs, dim=2)
+    # Any zero values mean the LF abstained
+    # We add 1 to those values because we will take a log
+    mask = torch.zeros_like(class_sum)
+    mask[class_sum == 0] = 1.0
+    class_sum = class_sum + mask
+    minus_log = -torch.log(class_sum)
+    batch_mean = torch.mean(minus_log)
+    return torch.mean(batch_mean)
+
+def bhat_reg(x):
+    """Calculate the Bhattacharyya distance between uniform and softmax(x)"""
+    B, N = x.shape
+    p = torch.softmax(x,dim=1)
+    q = torch.ones_like(p)/N
+    coef = torch.sum(torch.sqrt(p * q), dim=1)
+    return torch.mean(-torch.log(coef))
+
+
 def cross_entropy_with_probs(
         input: torch.Tensor,
         target: torch.Tensor,

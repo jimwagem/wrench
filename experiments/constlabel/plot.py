@@ -62,11 +62,11 @@ if __name__=='__main__':
         acc_mean = np.array([np.mean(acc_dict[ap]) for ap in index])
         
         fig, axs = plt.subplots(2, 1, sharex=True)
-        axs[0].scatter(zero_frac_index, zero_frac_val, label='zero fraction', c='blue')
+        axs[0].scatter(zero_frac_index, zero_frac_val, label='zero fraction', c='blue', alpha=0.3)
         axs[0].set_ylabel('Zero fraction')
         axs[0].plot(index, zero_frac_mean)
         axs[0].set_ylim((0.0, 1.1))
-        axs[1].scatter(acc_index, acc_val, label='accuracy', c='orange')
+        axs[1].scatter(acc_index, acc_val, label='accuracy', c='orange', alpha=0.3)
         axs[1].set_ylabel('Accuracy')
         axs[1].plot(index, acc_mean, c='orange')
         # axs[1].set_ylim((0.0, 1.1))

@@ -14,7 +14,7 @@ from ..basemodel import BaseTorchClassModel, BaseLabelModel
 from ..config import Config
 from ..dataset import BaseDataset
 from ..dataset.utils import split_labeled_unlabeled
-from ..utils import cross_entropy_with_probs, logit_entropy, norm_reg
+from ..utils import cross_entropy_with_probs, logit_entropy, norm_reg, acc_reg, bhat_reg
 logger = logging.getLogger(__name__)
 
 ABSTAIN = -1
@@ -40,13 +40,15 @@ def mig_loss_function(yhat, output2, p=None):
 
 
 class Encoder(BackBone):
-    def __init__(self, input_size, n_rules, hidden_size, n_class, temperature, dropout=0.3, balance=None, per_class_acc=True):
+    def __init__(self, input_size, n_rules, hidden_size, n_class, temperature, dropout=0.3, 
+                 balance=None, per_class_acc=True, use_sigmoid=False):
         super(Encoder, self).__init__(n_class=n_class)
         self.use_features = input_size != 0
         self.n_rules = n_rules
         self.acc_scaler = np.sqrt(self.n_rules)
         self.temperature = temperature
         self.per_class_acc = per_class_acc
+        self.use_sigmoid = use_sigmoid
         encoder_output_size = n_rules
         if per_class_acc:
             encoder_output_size *= n_class
@@ -71,7 +73,7 @@ class Encoder(BackBone):
         for i, pp in enumerate(p):
             self.log_class_prior.data[i] = np.log(p[i])
 
-    def forward(self, batch, only_accuracies=False, use_balance=True):
+    def forward(self, batch, return_accuracies=False, use_balance=True):
         device = self.get_device()
         weak_labels = batch['weak_labels'].to(device)
         if self.use_features:
@@ -91,10 +93,11 @@ class Encoder(BackBone):
             z = torch.unsqueeze(z, dim=2)
 
         mask = weak_labels != ABSTAIN
-        z = self.acc_scaler * torch.softmax(z, dim=1) * torch.unsqueeze(mask, dim=2)
-        # z = self.acc_scaler * torch.sigmoid(z) * torch.unsqueeze(mask, dim=2)
-        if only_accuracies:
-            return z
+        if self.use_sigmoid:
+            z = self.acc_scaler * torch.sigmoid(z) * torch.unsqueeze(mask, dim=2)
+        else:
+            z = self.acc_scaler * torch.softmax(z, dim=1) * torch.unsqueeze(mask, dim=2)
+
         one_hot = F.one_hot(weak_labels.long() * mask, num_classes=self.n_class)
         z = z * one_hot
 
@@ -103,22 +106,30 @@ class Encoder(BackBone):
             logits = torch.sum(z, dim=1) + self.log_class_prior
         else:
             logits = torch.sum(z, dim=1)
-        return logits
+        
+        if return_accuracies:
+            return logits, z
+        else:
+            return logits
 
 
 class WeaSELModel(BackBone):
-    def __init__(self, input_size, n_rules, hidden_size, n_class, temperature, dropout, backbone, balance, loss='ce', use_balance=True, per_class_acc=True):
+    def __init__(self, input_size, n_rules, hidden_size, n_class, temperature,
+                 dropout, backbone, balance, loss='ce', use_balance=True, per_class_acc=True, reg_weight=0, use_sigmoid=False):
         super(WeaSELModel, self).__init__(n_class=n_class)
         self.backbone = backbone
-        self.encoder = Encoder(input_size, n_rules, hidden_size, n_class, temperature, dropout, balance, per_class_acc=per_class_acc)
+        self.encoder = Encoder(input_size, n_rules, hidden_size, n_class, 
+                               temperature, dropout, balance, per_class_acc=per_class_acc, use_sigmoid=use_sigmoid)
         self.forward = self.backbone.forward
         self.loss = loss
         self.use_balance=use_balance
         self.per_class_acc = per_class_acc
+        self.reg_weight = reg_weight
+
 
     def calculate_loss(self, batch, use_hard_labels=False, reg_term=None):
         predict_f = self.backbone(batch)
-        predict_e = self.encoder(batch, use_balance=self.use_balance)
+        predict_e, z = self.encoder(batch, use_balance=self.use_balance, return_accuracies=True)
         if self.loss == 'ce':
             target_e = torch.softmax(predict_e.detach(), dim=-1)
             target_f = torch.softmax(predict_f.detach(), dim=-1)
@@ -140,18 +151,20 @@ class WeaSELModel(BackBone):
             entropy_e = logit_entropy(predict_e)
             entropy_f = logit_entropy(predict_f)
             # print(entropy_e.item(), entropy_f.item())
-            w = 0.05
-            loss += w*(entropy_e)
+            
+            loss += self.reg_weight*(entropy_e)
         elif reg_term == 'L1':
             d_e = norm_reg(predict_e, p=1)
-            d_f = norm_reg(predict_f, p=1)
-            w = 0.2
-            loss += -w*d_e
+            loss += -self.reg_weight*d_e
         elif reg_term == 'L2':
             d_e = norm_reg(predict_e, p=2)
-            d_f = norm_reg(predict_f, p=2)
-            w = 0.5
-            loss += -w*d_e
+            loss += -self.reg_weight*d_e
+        elif reg_term == 'acc_reg':
+            d_e = acc_reg(z)
+            loss += self.reg_weight*d_e
+        elif reg_term == 'bhat':
+            d_e = bhat_reg(predict_e)
+            loss -= self.reg_weight*d_e
         return loss
 
 
@@ -193,6 +206,8 @@ class WeaSEL(BaseTorchClassModel):
                  binary_mode: Optional[bool] = False,
                  use_balance: Optional[bool] = True,
                  per_class_acc: Optional[bool] = True,
+                 reg_weight: Optional[float] = 0,
+                 use_sigmoid: Optional[bool] = True, 
                  **kwargs: Any
                  ):
         super().__init__()
@@ -207,7 +222,9 @@ class WeaSEL(BaseTorchClassModel):
             'n_steps'         : n_steps,
             'grad_norm'       : grad_norm,
             'use_lr_scheduler': use_lr_scheduler,
+            'use_sigmoid'     : use_sigmoid,
             'binary_mode'     : binary_mode,
+            'reg_weight'      : reg_weight
         }
         self.model: Optional[WeaSELModel] = None
         self.label_model: Optional[BaseLabelModel] = None
@@ -282,7 +299,9 @@ class WeaSEL(BaseTorchClassModel):
                 balance=balance,
                 loss=loss,
                 use_balance=self.use_balance,
-                per_class_acc=self.per_class_acc
+                per_class_acc=self.per_class_acc,
+                reg_weight=hyperparas['reg_weight'],
+                use_sigmoid=hyperparas['use_sigmoid']
             )
             self.model = model.to(device)
         else:
@@ -329,7 +348,6 @@ class WeaSEL(BaseTorchClassModel):
                 model.train()
                 optimizer.zero_grad()
                 for labeled_batch in labeled_dataloader:
-                    
                     loss = model.calculate_loss(labeled_batch, use_hard_labels=use_hard_labels, reg_term=reg_term)
                     loss.backward()
                     cnt += 1
@@ -374,6 +392,13 @@ class WeaSEL(BaseTorchClassModel):
 
         return history
 
-    def extract_weights(self, x):
-        z = self.model.encoder.forward(x, only_accuracies=True)
-        return z.detach().mean(axis=(0, 2)).numpy()
+    def extract_weights(self, dataset):
+        dataloader = self._init_valid_dataloader(dataset)
+        z_list = []
+        for batch in dataloader:
+            _, z = self.model.encoder.forward(batch, return_accuracies=True)
+            z_list.append(z.detach())
+        z_total = torch.cat(z_list, dim=0)
+        class_sum = torch.sum(z_total, dim=2)
+        means = class_sum.mean(axis=0).numpy()
+        return means

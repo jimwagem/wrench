@@ -5,18 +5,74 @@ import numpy as np
 from .syntheticdataset import BaseSyntheticGenerator
 from ..dataset import BaseDataset
 
-class BinarizedDataset(BaseDataset):
-    def __init__(self, base_dataset, allowed_classes):
-        super.__init__()
-        ind = [ i for i, l in enumerate(base_dataset.labels) if l in allowed_classes]
-        filtr = lambda e: e if e in allowed_classes else -1
-        weak_labels = [list(map(wl, filtr)) for wl in base_dataset.weak_labels]
-        
-        self.n_lf = len(self.weak_labels[0])
-        self.features = np.array(base_dataset.features)[ind]
-        self.labels = np.array(base_dataset.labels)[ind]
-        self.weak_labels = np.array(base_dataset.labels)[ind]
+class SubSampledLFDataset(BaseDataset):
+    def __init__(self, base_dataset):
+        """Only works for binary datasets, with single polarity LFs"""
+        super().__init__(SubSampledLFDataset)
+        # Copy basic attributes
+        self.features = base_dataset.features
+        self.ids = base_dataset.ids
+        self.id2label = base_dataset.id2label
+        self.examples = base_dataset.examples
+        self.labels = base_dataset.labels
+        self.split = base_dataset.split
         self.n_class = base_dataset.n_class
+        self.path = base_dataset.path
+
+        # # Sub sample weak labels for balance
+        # Calculate class contribution
+        weak_labels = np.array(base_dataset.weak_labels)
+        lf_zeros = np.sum(weak_labels == 0, axis=0)
+        lf_ones = np.sum(weak_labels == 1, axis=0)
+        # Make sure we only have polarity 1 lfs
+        assert np.sum(lf_zeros * lf_ones) == 0
+        if np.sum(lf_zeros) >= np.sum(lf_ones):
+            # print('More zeros')
+            majority = lf_zeros
+            minority = lf_ones
+        else:
+            # print('More ones')
+            majority = lf_ones
+            minority = lf_zeros
+        n_minority = np.sum(minority)
+        chosen = minority > 0
+        # Sample 
+        n_majority = 0
+        index = np.arange(len(majority))
+        # print(f'n_minority: {n_minority}')
+        while n_majority < n_minority and not chosen.all():
+            new_sample = np.random.choice(index[~chosen])
+            chosen[new_sample] = True
+            n_majority += majority[new_sample]
+            # print(f'n_majority {n_majority}')
+        
+        # print(chosen)
+        self.n_lf = np.sum(chosen)
+        self.weak_labels = np.array(weak_labels)[:, chosen].tolist()
+        self.__class__ = base_dataset.__class__
+    
+    def extract_feature_(self,
+                         extract_fn: str,
+                         return_extractor: bool,
+                         **kwargs):
+        if return_extractor:
+            return extract_fn
+        
+
+
+
+# class BinarizedDataset(BaseDataset):
+#     def __init__(self, base_dataset, allowed_classes):
+#         super.__init__()
+#         ind = [ i for i, l in enumerate(base_dataset.labels) if l in allowed_classes]
+#         filtr = lambda e: e if e in allowed_classes else -1
+#         weak_labels = [list(map(wl, filtr)) for wl in base_dataset.weak_labels]
+        
+#         self.n_lf = len(self.weak_labels[0])
+#         self.features = np.array(base_dataset.features)[ind]
+#         self.labels = np.array(base_dataset.labels)[ind]
+#         self.weak_labels = np.array(base_dataset.labels)[ind]
+#         self.n_class = base_dataset.n_class
         
 
 
