@@ -127,7 +127,7 @@ class WeaSELModel(BackBone):
         self.reg_weight = reg_weight
 
 
-    def calculate_loss(self, batch, use_hard_labels=False, reg_term=None):
+    def calculate_loss(self, batch, use_hard_labels=False, reg_term=None, c_weights=None):
         predict_f = self.backbone(batch)
         predict_e, z = self.encoder(batch, use_balance=self.use_balance, return_accuracies=True)
         if self.loss == 'ce':
@@ -136,17 +136,27 @@ class WeaSELModel(BackBone):
             if use_hard_labels:
                 target_e = F.one_hot(torch.argmax(target_e, dim=-1), num_classes=self.n_class)
                 target_f = F.one_hot(torch.argmax(target_f, dim=-1), num_classes=self.n_class)
-            # loss_f = cross_entropy_with_probs(predict_f, target_e) - logit_entropy(predict_e.detach())
-            # loss_e = cross_entropy_with_probs(predict_e, target_f) - logit_entropy(predict_f.detach())
-            loss_f = cross_entropy_with_probs(predict_f, target_e) 
-            loss_e = cross_entropy_with_probs(predict_e, target_f) 
+
+            loss_f_batch = cross_entropy_with_probs(predict_f, target_e, reduction="none") 
+            loss_e_batch = cross_entropy_with_probs(predict_e, target_f, reduction="none")
+            
+            # Class weights, currently only for binary
+            if c_weights is not None:
+                weight = torch.ones_like(loss_f_batch)
+                weight[predict_e[:,0] <= predict_f[:,0]] *= c_weights[0]
+                weight[predict_e[:,0] > predict_f[:,0]] *= c_weights[1]
+                loss_f_batch = loss_f_batch * weight
+            loss_f = loss_f_batch.mean()
+            loss_e = loss_e_batch.mean()
         elif self.loss == 'mig':
             loss_f = mig_loss_function(predict_f, predict_e.detach())
             loss_e = mig_loss_function(predict_e, predict_f.detach())
         else:
             raise ValueError("loss should be 'ce' or 'mig'")
-            
+
         loss = loss_e + loss_f
+
+        # Calibration regularization
         if reg_term == 'entropy':
             entropy_e = logit_entropy(predict_e)
             entropy_f = logit_entropy(predict_f)
@@ -159,7 +169,7 @@ class WeaSELModel(BackBone):
         elif reg_term == 'L2':
             d_e = norm_reg(predict_e, p=2)
             loss += -self.reg_weight*d_e
-        elif reg_term == 'acc_reg':
+        elif reg_term == 'log_acc':
             d_e = acc_reg(z)
             loss += self.reg_weight*d_e
         elif reg_term == 'bhat':
@@ -260,6 +270,7 @@ class WeaSEL(BaseTorchClassModel):
             reg_term: Optional[str] = None,
             init_model: Optional[bool] = True,
             finalize: Optional[bool] = True,
+            c_weights = None,
             **kwargs: Any):
 
         if not verbose:
@@ -348,7 +359,7 @@ class WeaSEL(BaseTorchClassModel):
                 model.train()
                 optimizer.zero_grad()
                 for labeled_batch in labeled_dataloader:
-                    loss = model.calculate_loss(labeled_batch, use_hard_labels=use_hard_labels, reg_term=reg_term)
+                    loss = model.calculate_loss(labeled_batch, use_hard_labels=use_hard_labels, reg_term=reg_term, c_weights=c_weights)
                     loss.backward()
                     cnt += 1
 

@@ -62,7 +62,16 @@ train_data, valid_data, test_data = load_dataset(
     cache_name='bert',
     device=device,
 )
-train_data = SubSampledLFDataset(train_data)
+# train_data = SubSampledLFDataset(train_data)
+
+wl = np.array(train_data.weak_labels)
+n_zero_vote = np.sum(wl == 0)
+n_one_vote = np.sum(wl == 1)
+total = n_zero_vote + n_one_vote
+zero_frac = n_zero_vote/total
+one_frac = n_one_vote/total
+
+
 # train_data, valid_data, test_data = resplit_dataset(train_data, valid_data, test_data)
 #### Run WeaSEL
 model = WeaSEL(
@@ -96,13 +105,14 @@ model.fit(
     metric='logloss',
     patience=200,
     device=device,
-    reg_term='L1'
+    reg_term='L1',
+    c_weights=[zero_frac, one_frac]
 )
 metric = model.test(test_data, 'acc')
 logger.info(f'WeaSEL testacc: {metric}')
 metric = model.test(test_data, 'f1_binary')
 logger.info(f'WeaSEL testf1: {metric}')
-logger.info(f'max f1: {max_metric(model.predict_proba(test_data), test_data.labels, cls_metrics.matthews_corrcoef, plot=True)}')
+logger.info(f'max mcc: {max_metric(model.predict_proba(test_data), test_data.labels, cls_metrics.matthews_corrcoef, plot=True)}')
 # ece = model.test(test_data, 'ece')
 # logger.info(f'WeaSEL test ece: {ece}')
 

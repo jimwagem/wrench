@@ -3,6 +3,7 @@ import torch
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+import pickle
 from wrench.dataset import load_dataset, resplit_dataset
 from wrench.logging import LoggingHandler
 from snorkel.labeling import LFAnalysis
@@ -95,7 +96,7 @@ if __name__=="__main__":
     device = torch.device('cpu')
 
     dataset_path = '../../../datasets/'
-    data = 'imdb_136'
+    data = 'amazon'
     train_data, valid_data, test_data = load_dataset(
         dataset_path,
         data,
@@ -107,18 +108,12 @@ if __name__=="__main__":
     correct_lf_balance = True
     if correct_lf_balance:
         data += '_balanced'
-    train_data = SubSampledLFDataset(train_data)
+        train_data = SubSampledLFDataset(train_data)
     save=True
     # for reg in ['None', 'L1']:
+    with open('./reg_weight_dict.pkl', 'rb') as f:
+        reg2weight = pickle.load(f)
     for reg in ['None','L1','bhat','entropy','log_acc']:
-        reg2weight = {
-            'None': 0,
-            'log_acc': 0.3,
-            'L1': 0.5,
-            'L2': 0.5,
-            'entropy': 0.5,
-            'bhat': 1
-        }
         model = WeaSEL(
             temperature=1.0,
             dropout=0.3,
