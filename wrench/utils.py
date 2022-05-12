@@ -102,11 +102,22 @@ def logit_entropy(x):
     batch_entropy = torch.sum(-logp*p, dim=1)
     return torch.mean(batch_entropy)
 
-def norm_reg(x, p=2):
+def norm_reg(x, p=2, c_weights=None):
     """Calculate distance between x and uniform distribution in the p norm."""
     B, N = x.shape
     uniform_dist = torch.ones_like(x)/N
-    batch_diff = torch.norm(torch.softmax(x,dim=1) - uniform_dist, p=p, dim=1)
+    xs = torch.softmax(x,dim=1)
+    batch_diff = torch.norm(xs - uniform_dist, p=p, dim=1)
+
+    # Weight correction
+    if c_weights is not None:
+        c_weights = torch.tensor(c_weights)
+        predicted = torch.argmax(xs, dim = 1)
+        # print(predicted)
+        weights = 1/c_weights[predicted]
+        # weights = (weights/torch.sum(weights))* N * B
+        # print(weights)
+        batch_diff = batch_diff * weights
     return torch.mean(batch_diff)
 
 def acc_reg(accs):

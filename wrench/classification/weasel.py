@@ -137,17 +137,19 @@ class WeaSELModel(BackBone):
                 target_e = F.one_hot(torch.argmax(target_e, dim=-1), num_classes=self.n_class)
                 target_f = F.one_hot(torch.argmax(target_f, dim=-1), num_classes=self.n_class)
 
-            loss_f_batch = cross_entropy_with_probs(predict_f, target_e, reduction="none") 
-            loss_e_batch = cross_entropy_with_probs(predict_e, target_f, reduction="none")
+            # loss_f_batch = cross_entropy_with_probs(predict_f, target_e, reduction="none") 
+            # loss_e_batch = cross_entropy_with_probs(predict_e, target_f, reduction="none")
             
-            # Class weights, currently only for binary
-            if c_weights is not None:
-                weight = torch.ones_like(loss_f_batch)
-                weight[predict_e[:,0] <= predict_f[:,0]] *= c_weights[0]
-                weight[predict_e[:,0] > predict_f[:,0]] *= c_weights[1]
-                loss_f_batch = loss_f_batch * weight
-            loss_f = loss_f_batch.mean()
-            loss_e = loss_e_batch.mean()
+            # # Class weights, currently only for binary
+            # if c_weights is not None:
+            #     weight = torch.ones_like(loss_f_batch)
+            #     weight[predict_e[:,0] <= predict_f[:,0]] *= c_weights[0]
+            #     weight[predict_e[:,0] > predict_f[:,0]] *= c_weights[1]
+            #     loss_f_batch = loss_f_batch * weight
+            # loss_f = loss_f_batch.mean()
+            # loss_e = loss_e_batch.mean()
+            loss_f = cross_entropy_with_probs(predict_f, target_e) 
+            loss_e = cross_entropy_with_probs(predict_e, target_f)
         elif self.loss == 'mig':
             loss_f = mig_loss_function(predict_f, predict_e.detach())
             loss_e = mig_loss_function(predict_e, predict_f.detach())
@@ -164,7 +166,7 @@ class WeaSELModel(BackBone):
             
             loss += self.reg_weight*(entropy_e)
         elif reg_term == 'L1':
-            d_e = norm_reg(predict_e, p=1)
+            d_e = norm_reg(predict_e, p=1, c_weights=c_weights)
             loss += -self.reg_weight*d_e
         elif reg_term == 'L2':
             d_e = norm_reg(predict_e, p=2)

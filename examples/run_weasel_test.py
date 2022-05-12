@@ -52,7 +52,7 @@ device = torch.device('cpu')
 # set_seed(1)
 #### Load dataset
 dataset_path = '../../datasets/'
-data = 'imdb_136'
+data = 'amazon'
 # bert_model_name = 'bert-base-cased'
 train_data, valid_data, test_data = load_dataset(
     dataset_path,
@@ -96,7 +96,7 @@ model = WeaSEL(
     use_balance=False,
     per_class_acc=False,
     use_sigmoid=True,
-    reg_weight=0.2
+    reg_weight=0.5
 )
 model.fit(
     dataset_train=train_data,
