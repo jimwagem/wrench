@@ -41,11 +41,11 @@ def mig_loss_function(yhat, output2, p=None):
 
 class Encoder(BackBone):
     def __init__(self, input_size, n_rules, hidden_size, n_class, temperature, dropout=0.3, 
-                 balance=None, per_class_acc=True, use_sigmoid=False):
+                 balance=None, per_class_acc=True, use_sigmoid=False, acc_scaler_factor=1.0):
         super(Encoder, self).__init__(n_class=n_class)
         self.use_features = input_size != 0
         self.n_rules = n_rules
-        self.acc_scaler = np.sqrt(self.n_rules)
+        self.acc_scaler = np.sqrt(self.n_rules)*acc_scaler_factor
         self.temperature = temperature
         self.per_class_acc = per_class_acc
         self.use_sigmoid = use_sigmoid
@@ -115,11 +115,13 @@ class Encoder(BackBone):
 
 class WeaSELModel(BackBone):
     def __init__(self, input_size, n_rules, hidden_size, n_class, temperature,
-                 dropout, backbone, balance, loss='ce', use_balance=True, per_class_acc=True, reg_weight=0, use_sigmoid=False):
+                 dropout, backbone, balance, loss='ce', use_balance=True, per_class_acc=True, reg_weight=0,
+                 use_sigmoid=False, acc_scaler_factor=1.0):
         super(WeaSELModel, self).__init__(n_class=n_class)
         self.backbone = backbone
         self.encoder = Encoder(input_size, n_rules, hidden_size, n_class, 
-                               temperature, dropout, balance, per_class_acc=per_class_acc, use_sigmoid=use_sigmoid)
+                               temperature, dropout, balance, per_class_acc=per_class_acc,
+                               use_sigmoid=use_sigmoid, acc_scaler_factor=acc_scaler_factor)
         self.forward = self.backbone.forward
         self.loss = loss
         self.use_balance=use_balance
@@ -208,6 +210,7 @@ class WeaSEL(BaseTorchClassModel):
                  temperature: Optional[float] = 1.0,
                  dropout: Optional[float] = 0.3,
                  hidden_size: Optional[int] = 100,
+                 acc_scaler_factor: Optional[float] = 1.0,
 
                  batch_size: Optional[int] = 16,
                  real_batch_size: Optional[int] = 16,
@@ -216,15 +219,16 @@ class WeaSEL(BaseTorchClassModel):
                  grad_norm: Optional[float] = -1,
                  use_lr_scheduler: Optional[bool] = False,
                  binary_mode: Optional[bool] = False,
-                 use_balance: Optional[bool] = True,
+                 use_balance: Optional[bool] = False,
                  per_class_acc: Optional[bool] = True,
                  reg_weight: Optional[float] = 0,
-                 use_sigmoid: Optional[bool] = True, 
+                 use_sigmoid: Optional[bool] = False, 
                  **kwargs: Any
                  ):
         super().__init__()
         self.hyperparas = {
             'temperature'     : temperature,
+            'acc_scaler_factor': acc_scaler_factor,
             'dropout'         : dropout,
             'hidden_size'     : hidden_size,
 
@@ -314,7 +318,8 @@ class WeaSEL(BaseTorchClassModel):
                 use_balance=self.use_balance,
                 per_class_acc=self.per_class_acc,
                 reg_weight=hyperparas['reg_weight'],
-                use_sigmoid=hyperparas['use_sigmoid']
+                use_sigmoid=hyperparas['use_sigmoid'],
+                acc_scaler_factor=hyperparas['acc_scaler_factor']
             )
             self.model = model.to(device)
         else:

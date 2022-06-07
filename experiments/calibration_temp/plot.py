@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 if __name__=="__main__":
-    result_path = './results.csv'
+    tau_type = 'tau2'
+    result_path = f'./results_{tau_type}.csv'
     df = pd.read_csv(result_path)
 
     grouped = df.groupby('Temperature')
@@ -29,5 +30,5 @@ if __name__=="__main__":
     ax.set_ylim((0,1))
     ax.set_xlabel('Temperature')
     ax.set_title('Effect of temperature on calibration for WeaSEL')
-    plt.savefig('./temp_cal.png')
+    plt.savefig(f'./temp_cal_{tau_type}.png')
     plt.show()
