@@ -15,7 +15,7 @@ from wrench.evaluation import mcc
 from wrench.synthetic.dataset_generator import SubSampledLFDataset
 
 show=False
-def max_mcc(probs, true_labels, reg, num=100, plot=False, save=False, data='test'):
+def max_mcc(probs, true_labels, reg, num=100, plot=False, save=False, data='test', use_sigmoid=True):
     p = probs[:,0]
     max_p = max(p)
     min_p = min(p)
@@ -38,21 +38,27 @@ def max_mcc(probs, true_labels, reg, num=100, plot=False, save=False, data='test
         plt.ylabel('MCC')
         plt.grid()
         if save:
-            plt.savefig(f'./{data}/max_mcc_{reg}.pdf')
+            if use_sigmoid:
+                plt.savefig(f'./{data}/max_mcc_{reg}.pdf')
+            else:
+                plt.savefig(f'./{data}/max_mcc_{reg}_softmax.pdf')
         if show:
             plt.show()
         else:
             plt.clf()
     return metric_vals[c_max_index]
 
-def prediction_hist(probs, reg, save=False, data='test'):
+def prediction_hist(probs, reg, save=False, data='test', use_sigmoid=True):
     p = probs[:,0]
     plt.hist(p, bins=100)
     plt.xlabel('Prediction $P(Y=0)$')
     plt.ylabel('count')
     plt.title('Histogram of prediction scores')
     if save:
-        plt.savefig(f'./{data}/predictions_{reg}.pdf')
+        if use_sigmoid:
+            plt.savefig(f'./{data}/predictions_{reg}.pdf')
+        else:
+            plt.savefig(f'./{data}/predictions_{reg}_softmax.pdf')
     if show:
         plt.show()
     else:
@@ -93,10 +99,13 @@ def weight_histogram(weights, weak_labels, save=False, correct_coverage=False, d
         plt.clf()
 
 if __name__=="__main__":
+    use_sigmoid = True
+    correct_lf_balance = True
+    save=True
     device = torch.device('cpu')
 
     dataset_path = '../../../datasets/'
-    data = 'amazon'
+    data = 'imdb_136'
     train_data, valid_data, test_data = load_dataset(
         dataset_path,
         data,
@@ -105,11 +114,9 @@ if __name__=="__main__":
         cache_name='bert',
         device=device,
     )
-    correct_lf_balance = True
     if correct_lf_balance:
         data += '_balanced'
         train_data = SubSampledLFDataset(train_data)
-    save=True
     # for reg in ['None', 'L1']:
     with open('./reg_weight_dict.pkl', 'rb') as f:
         reg2weight = pickle.load(f)
@@ -136,7 +143,7 @@ if __name__=="__main__":
             use_balance=False,
             per_class_acc=False,
             reg_weight=reg2weight[reg],
-            use_sigmoid=True
+            use_sigmoid=use_sigmoid
         )
         metric = 'auc' if reg == 'None' else 'logloss'
         model.fit(
@@ -153,25 +160,32 @@ if __name__=="__main__":
         )
         labels = test_data.labels
         probs = model.predict_proba(test_data)
-        max_f1 = max_mcc(probs, labels, reg=reg, plot=True, save=save, data=data)
-        prediction_hist(probs, reg=reg, save=save, data=data)
+        max_f1 = max_mcc(probs, labels, reg=reg, plot=True, save=save, data=data, use_sigmoid=use_sigmoid)
+        prediction_hist(probs, reg=reg, save=save, data=data, use_sigmoid=use_sigmoid)
 
         # # Calibration curve
         n_bins = 30
         if reg == 'None':
             n_bins= 100
         prob_true, prob_pred = calibration_curve(labels, probs[:,1], n_bins=n_bins)
-        plt.scatter(prob_pred, prob_true)
+        plt.plot(prob_pred, prob_true)
+        x_range = np.linspace(0,1,100)
+        plt.plot(x_range, x_range)
+        plt.ylim(0,1)
         plt.title('Calibration curve')
         plt.xlabel('Mean predicted probability')
         plt.ylabel('Fraction of positives')
         if save:
-            plt.savefig(f'./{data}/calibration_curve_{reg}.pdf')
+            if use_sigmoid:
+                path = f'./{data}/calibration_curve_{reg}.pdf'
+            else:
+                path = f'./{data}/calibration_curve_{reg}_softmax.pdf'
+            plt.savefig(path)
         if show:
             plt.show()
         else:
             plt.clf()
-        weights = model.extract_weights(train_data)
-        weight_histogram(weights, train_data.weak_labels, save=save, correct_coverage=True, data=data)
+        # weights = model.extract_weights(train_data)
+        # weight_histogram(weights, train_data.weak_labels, save=save, correct_coverage=True, data=data)
 
 

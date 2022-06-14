@@ -12,12 +12,15 @@ if __name__=="__main__":
     stds = grouped.std()
     ece = means['ECE'].to_numpy()
     acc = means['acc'].to_numpy()
+    weight = means['weight'].to_numpy()
     ece_std = stds['ECE'].to_numpy()
     acc_std = stds['acc'].to_numpy()
+    weight_std = stds['weight'].to_numpy()
 
     temp_index = means.index.to_numpy()
     index = np.arange(len(temp_index))
 
+    # ECE plot
     fig = plt.figure(1)
     ax = fig.add_subplot()
     ax.plot(index, ece, label='ece')
@@ -32,3 +35,21 @@ if __name__=="__main__":
     ax.set_title('Effect of temperature on calibration for WeaSEL')
     plt.savefig(f'./temp_cal_{tau_type}.png')
     plt.show()
+
+    # Weight plot
+    fig = plt.figure(1)
+    ax = fig.add_subplot()
+    one_index = 1
+    assert temp_index[one_index] == 1.0
+    lin_fit = temp_index * weight[one_index]
+    ax.plot(index, weight, label='mean $\\tau_2 \\theta$')
+    ax.fill_between(index, weight + weight_std, weight - weight_std, alpha=0.3)
+    ax.plot(index, lin_fit, label='linear fit')
+    ax.legend()
+    ax.xaxis.set_ticks(index)
+    ax.xaxis.set_ticklabels(temp_index)
+    ax.set_xlabel('Temperature')
+    ax.set_title('Effect of temperature on mean accuracy score for WeaSEL')
+    plt.savefig(f'./temp_weight_{tau_type}.png')
+    plt.show()
+    plt.clf()

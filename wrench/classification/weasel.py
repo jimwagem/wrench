@@ -97,7 +97,6 @@ class Encoder(BackBone):
             z = self.acc_scaler * torch.sigmoid(z) * torch.unsqueeze(mask, dim=2)
         else:
             z = self.acc_scaler * torch.softmax(z, dim=1) * torch.unsqueeze(mask, dim=2)
-
         one_hot = F.one_hot(weak_labels.long() * mask, num_classes=self.n_class)
         z = z * one_hot
 

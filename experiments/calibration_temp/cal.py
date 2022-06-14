@@ -33,7 +33,7 @@ if __name__=="__main__":
 
     tau_type = 'tau2'
     results_path=f'./results_{tau_type}.csv'
-    columns=['Temperature', 'ECE', 'acc']
+    columns=['Temperature', 'ECE', 'acc', 'weight']
     
     results = []
     temp_range = [0.5, 1, 2, 4, 8, 16]
@@ -79,10 +79,14 @@ if __name__=="__main__":
             )
             ece = model.test(test_data, 'ece')
             acc = model.test(test_data, 'acc')
+            mean_weight = np.mean(model.extract_weights(test_data))
             logger.info(f'WeaSEL test ece, acc for temp {temp} and seed {seed}: {ece}, {acc}')
-            results.append([temp, ece, acc])
+            logger.info(f'Mean weight: {mean_weight}')
+            
+            results.append([temp, ece, acc, mean_weight])
     
-    df = pd.DataFrame(data=np.array(results), columns=columns)
+    df = pd.DataFrame(data=np.array(results),
+    columns=columns)
     df.to_csv(path_or_buf=results_path, mode='a')
     
 
