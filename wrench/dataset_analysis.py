@@ -56,32 +56,6 @@ def majority_proportion(weak_labels):
       results.append(x.count(majority)/n_lfs)
   return results
 
-def lf_maj_proportion(dataname, dataset_path):
-    """Plot a histogram of the majority proportion per datapoint.
-    The majority proportion is defined as the """
-    train_data, valid_data, test_data = load_dataset(
-        dataset_path,
-        dataname,
-        extract_feature=False
-    )
-    mps = []
-    bins = np.linspace(0, 1, num=50)
-    for data in [train_data, valid_data, test_data]:
-        weak_labels = data.weak_labels
-        mp = majority_proportion(weak_labels)
-        mps.append(mp)
-    labels=['train', 'val', 'test']
-    colors=['red','yellow','blue']
-    fig, axs = plt.subplots(3, 1, sharex=True)
-    for i in range(3):
-        axs[i].hist(mps[i], label=labels[i], color=colors[i], bins=bins)
-    axs[1].set_ylabel('Counts')
-    axs[2].set_xlabel('Majority proportion')
-    fig.suptitle(f'Majority proportion {dataname}')
-    fig.legend()
-    # fig.show()
-    plt.show()
-    fig.clear()
 
 def effective_lf_count(dataname, dataset_path):
     train_data, valid_data, test_data = load_dataset(
