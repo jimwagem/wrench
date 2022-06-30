@@ -54,14 +54,16 @@ def effective_lf_count(weak_labels, ds_name, save_file='./figs/'):
     elf_counts = []
     for wl in weak_labels:
       elf_counts.append(len(wl) - wl.count(-1))
-    bins = np.arange(np.max(elf_counts) + 1)
-    plt.hist(elf_counts, bins=bins)
-    plt.xticks(bins + 0.5, bins)
+    
+    bins = np.arange(np.max(elf_counts) + 2) - 0.5
+    plt.hist(elf_counts, bins=bins, range=(np.min(bins), np.max(bins)))
+    ticks = np.arange(np.max(elf_counts) + 1)
+    plt.xticks(ticks, ticks)
     plt.ylabel('Counts')
-    plt.xlabel('Effective number of labeling functions')
-    plt.title(f'Effective number of labeling functions {ds_name}')
+    plt.xlabel('Effective number of weak labels')
+    plt.title(f'Effective number of weak labels {ds_name}')
     plt.savefig(save_file + f'{ds_name}_effeclf.pdf')
-    # plt.show()
+    plt.show()
     plt.clf()
 
 def LFA(dataset_name, path):
@@ -80,6 +82,6 @@ if __name__ == "__main__":
     datasets = ['profteacher', 'imdb_12', 'imdb_136', 'amazon',
                 'youtube', 'sms', 'census', 'yelp',
                 'agnews', 'semeval', 'trec', 'chemprot']
-    # datasets = ['census']
+    # datasets = ['semeval']
     for ds in datasets:
         LFA(ds, path)
