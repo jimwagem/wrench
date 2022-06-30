@@ -1,16 +1,27 @@
 For the graders:
 This github is a fork of the original WRENCH github, the README for which you can see below.
 The figures used in my thesis can be found in the experiments folder.
+
 Weasel calibration:
+
 -experiments/cal_reg/
+
 -experiments/cal_temp/
+
 Weasel learning dynamics and the effect of abst:
+
 -experiments/constlabel/
+
 Leaderboard:
+
 -experiments/leaderboard/
+
 Robustness:
+
 -experiments/multi_gaussian/
+
 Dataset characteristics:
+
 -experiments/LFanalysis/
 
 <h1 style="text-align:center">
